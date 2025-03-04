@@ -1,9 +1,9 @@
 // resources/js/layouts/Navigation.jsx
-import React, { useState } from 'react';
-import { Link, usePage } from '@inertiajs/react';
-import ApplicationLogo from '@/Components/ApplicationLogo';
-import Dropdown from '@/Components/Dropdown';
-import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
+import React, { useState } from "react";
+import { Link, usePage } from "@inertiajs/react";
+import ApplicationLogo from "@/Components/ApplicationLogo";
+import Dropdown from "@/Components/Dropdown";
+import ResponsiveNavLink from "@/Components/ResponsiveNavLink";
 
 export default function Navigation() {
   const [open, setOpen] = useState(false);
@@ -17,28 +17,28 @@ export default function Navigation() {
           <div className="flex">
             {/* Logo */}
             <div className="shrink-0 flex items-center">
-              <Link href={route('dashboard')}>
+              <Link href={route("dashboard")}>
                 <ApplicationLogo className="block h-9 w-auto fill-current text-gray-800 dark:text-gray-200" />
               </Link>
             </div>
 
             {/* Navigation Links */}
             <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-              <ResponsiveNavLink 
-                href={route('dashboard')} 
-                active={route().current('dashboard')}
+              <ResponsiveNavLink
+                href={route("dashboard")}
+                active={route().current("dashboard")}
               >
                 Dashboard
               </ResponsiveNavLink>
-              <ResponsiveNavLink 
-                href={route('quotations')} 
-                active={route().current('quotations')}
+              <ResponsiveNavLink
+                href={route("quotations")}
+                active={route().current("quotations")}
               >
                 Cotizaciones
               </ResponsiveNavLink>
-              <ResponsiveNavLink 
-                href={route('jobs')} 
-                active={route().current('jobs')}
+              <ResponsiveNavLink
+                href={route("jobs")}
+                active={route().current("jobs")}
               >
                 Trabajos
               </ResponsiveNavLink>
@@ -53,17 +53,20 @@ export default function Navigation() {
                   <div>{auth.user.name}</div>
                   <div className="ms-1">
                     <svg className="fill-current h-4 w-4" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+                      <path
+                        fillRule="evenodd"
+                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                      />
                     </svg>
                   </div>
                 </button>
               </Dropdown.Trigger>
 
               <Dropdown.Content>
-                <Dropdown.Link href={route('profile.edit')}>
+                <Dropdown.Link href={route("profile.edit")}>
                   Perfil
                 </Dropdown.Link>
-                <Dropdown.Link href={route('logout')} method="post" as="button">
+                <Dropdown.Link href={route("logout")} method="post" as="button">
                   Cerrar Sesión
                 </Dropdown.Link>
               </Dropdown.Content>
@@ -76,11 +79,26 @@ export default function Navigation() {
               onClick={() => setOpen(!open)}
               className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-900 focus:text-gray-500 dark:focus:text-gray-400 transition duration-150 ease-in-out"
             >
-              <svg className="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+              <svg
+                className="h-6 w-6"
+                stroke="currentColor"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
                 {!open ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
                 ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 )}
               </svg>
             </button>
@@ -89,11 +107,11 @@ export default function Navigation() {
       </div>
 
       {/* Responsive Navigation */}
-      <div className={`${open ? 'block' : 'hidden'} sm:hidden`}>
+      <div className={`${open ? "block" : "hidden"} sm:hidden`}>
         <div className="pt-2 pb-3 space-y-1">
-          <ResponsiveNavLink 
-            href={route('dashboard')} 
-            active={route().current('dashboard')}
+          <ResponsiveNavLink
+            href={route("dashboard")}
+            active={route().current("dashboard")}
           >
             Dashboard
           </ResponsiveNavLink>
@@ -111,14 +129,10 @@ export default function Navigation() {
           </div>
 
           <div className="mt-3 space-y-1">
-            <ResponsiveNavLink href={route('profile.edit')}>
+            <ResponsiveNavLink href={route("profile.edit")}>
               Perfil
             </ResponsiveNavLink>
-            <ResponsiveNavLink 
-              href={route('logout')} 
-              method="post" 
-              as="button"
-            >
+            <ResponsiveNavLink href={route("logout")} method="post" as="button">
               Cerrar Sesión
             </ResponsiveNavLink>
           </div>

@@ -1,17 +1,20 @@
 // resources/js/layouts/GuestLayout.jsx
-import React from 'react';
-import { Head, Link } from '@inertiajs/react';
-import ApplicationLogo from '@/Components/ApplicationLogo';
+import React from "react";
+import { Head, Link } from "@inertiajs/react";
+import ApplicationLogo from "@/Components/ApplicationLogo";
 
 export default function GuestLayout({ children }) {
   return (
     <div className="font-sans text-gray-900 antialiased">
       <Head>
-        <title>{import.meta.env.VITE_APP_NAME || 'Chamberos'}</title>
+        <title>{import.meta.env.VITE_APP_NAME || "Chamberos"}</title>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="preconnect" href="https://fonts.bunny.net" />
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+        <link
+          href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap"
+          rel="stylesheet"
+        />
       </Head>
 
       <div className="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100 dark:bg-gray-900">
