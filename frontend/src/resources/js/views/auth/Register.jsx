@@ -1,4 +1,3 @@
-// resources/js/Pages/Auth/Register.jsx
 import GuestLayout from "@/Layouts/GuestLayout";
 import InputLabel from "@/Components/InputLabel";
 import TextInput from "@/Components/TextInput";
