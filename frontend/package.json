@@ -3,18 +3,21 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@inertiajs/progress": "^0.2.7",
+    "@inertiajs/progress": "^0.1.2",
     "@inertiajs/react": "^2.0.4",
-    "@testing-library/dom": "^10.4.0",
+    "@tailwindcss/vite": "^4.0.13",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.2.0",
     "@testing-library/user-event": "^13.5.0",
-    "axios": "^1.8.1",
+    "axios": "^1.8.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-router-dom": "^7.2.0",
+    "react-router-dom": "^7.3.0",
     "react-scripts": "^5.0.1",
-    "web-vitals": "^2.1.4"
+    "resolve-url-loader": "^5.0.0",
+    "tailwindcss": "^4.0.13",
+    "web-vitals": "^4.2.4",
+    "workbox-webpack-plugin": "^7.3.0"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -39,10 +42,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  },
-  "devDependencies": {
-    "autoprefixer": "^10.4.20",
-    "postcss": "^8.5.3",
-    "tailwindcss": "^4.0.9"
   }
 }

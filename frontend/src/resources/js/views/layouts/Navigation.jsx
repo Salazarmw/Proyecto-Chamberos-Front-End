@@ -1,9 +1,8 @@
-// resources/js/layouts/Navigation.jsx
 import React, { useState } from "react";
 import { Link, usePage } from "@inertiajs/react";
-import ApplicationLogo from "@/Components/ApplicationLogo";
-import Dropdown from "@/Components/Dropdown";
-import ResponsiveNavLink from "@/Components/ResponsiveNavLink";
+import ApplicationLogo from "../components/ApplicationLogo";
+import Dropdown from "../components/Dropdown";
+import ResponsiveNavLink from "../components/ResponsiveNavLink";
 
 export default function Navigation() {
   const [open, setOpen] = useState(false);

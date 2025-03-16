@@ -1,7 +1,6 @@
-// resources/js/layouts/GuestLayout.jsx
 import React from "react";
 import { Head, Link } from "@inertiajs/react";
-import ApplicationLogo from "@/Components/ApplicationLogo";
+import ApplicationLogo from "../components/ApplicationLogo";
 
 export default function GuestLayout({ children }) {
   return (

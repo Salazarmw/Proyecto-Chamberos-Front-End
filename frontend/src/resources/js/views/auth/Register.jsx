@@ -1,10 +1,10 @@
-import GuestLayout from "@/Layouts/GuestLayout";
-import InputLabel from "@/Components/InputLabel";
-import TextInput from "@/Components/TextInput";
-import InputError from "@/Components/InputError";
-import DropdownRegister from "@/Components/DropdownRegister";
-import DateInput from "@/Components/DateInput";
-import PrimaryButton from "@/Components/PrimaryButton";
+import GuestLayout from "../layouts/GuestLayout";
+import InputLabel from "../components/InputLabel";
+import TextInput from "../components/TextInput";
+import InputError from "../components/InputError";
+import DropdownRegister from "../components/DropdownRegister";
+import DateInput from "../components/DateInput";
+import PrimaryButton from "../components/PrimaryButton";
 import { Head, Link, useForm } from "@inertiajs/react";
 import { useState } from "react";
 

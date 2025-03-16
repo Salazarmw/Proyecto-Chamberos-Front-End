@@ -1,15 +1,17 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Home from "./resources/js/views/auth/Register";
-import About from "./resources/js/views/About";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Register from "./views/auth/Register";
+import Login from "./views/auth/Login";
+import Home from "./views/Home";
 
 function App() {
   return (
-    <BrowserRouter>
+    <Router>
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/about" element={<About />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/login" element={<Login />} />
       </Routes>
-    </BrowserRouter>
+    </Router>
   );
 }
 
