@@ -1,24 +1,9 @@
-import { Head, Link } from "@inertiajs/react";
+import React from "react";
 import Navigation from "../components/ResponsiveNavLink";
 
 export default function AppLayout({ header, children }) {
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
-      <Head>
-        <title>Chamberos App</title>
-        <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <Link rel="preconnect" href="https://fonts.bunny.net" />
-        <Link
-          href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap"
-          rel="stylesheet"
-        />
-        <Link
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
-          rel="stylesheet"
-        />
-      </Head>
-
       <Navigation />
 
       {header && (
