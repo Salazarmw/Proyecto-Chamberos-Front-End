@@ -1,15 +1,15 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Register from "./views/auth/Register";
-import Login from "./views/auth/Login";
-import Home from "./views/Home";
+import Register from "./resources/js/Pages/Auth/Register.jsx";
+import Login from "./resources/js/Pages/Auth/Login.jsx";
+import Dashboard from "./resources/js/Pages/Dashboard.jsx";
 
 function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Home />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/login" element={<Login />} />
+        <Route path="/" element={<Login />} />
+        <Route path="/dashboard" element={<Dashboard />} />
       </Routes>
     </Router>
   );

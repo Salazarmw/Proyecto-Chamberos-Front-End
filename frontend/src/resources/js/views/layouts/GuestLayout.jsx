@@ -6,7 +6,7 @@ export default function GuestLayout({ children }) {
   return (
     <div className="font-sans text-gray-900 antialiased">
       <Head>
-        <title>{import.meta.env.VITE_APP_NAME || "Chamberos"}</title>
+        <title>{"Chamberos"}</title>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="preconnect" href="https://fonts.bunny.net" />

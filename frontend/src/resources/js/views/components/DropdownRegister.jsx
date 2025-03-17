@@ -1,4 +1,3 @@
-// resources/js/Components/DropdownRegister.jsx
 export default function DropdownRegister({
   id,
   name,

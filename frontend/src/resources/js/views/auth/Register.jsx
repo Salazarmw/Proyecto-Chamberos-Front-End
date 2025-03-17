@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import GuestLayout from "../layouts/GuestLayout";
 import InputLabel from "../components/InputLabel";
 import TextInput from "../components/TextInput";
@@ -5,11 +7,10 @@ import InputError from "../components/InputError";
 import DropdownRegister from "../components/DropdownRegister";
 import DateInput from "../components/DateInput";
 import PrimaryButton from "../components/PrimaryButton";
-import { Head, Link, useForm } from "@inertiajs/react";
-import { useState } from "react";
 
 export default function Register({ provinces }) {
-  const { data, setData, post, processing, errors } = useForm({
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
     name: "",
     lastname: "",
     email: "",
@@ -23,15 +24,19 @@ export default function Register({ provinces }) {
   });
 
   const [cantons, setCantons] = useState([]);
+  const [errors, setErrors] = useState({});
 
   const handleProvinceChange = async (e) => {
     const provinceId = e.target.value;
-    setData("province", provinceId);
-    setData("canton", "");
+    setFormData({
+      ...formData,
+      province: provinceId,
+      canton: "",
+    });
 
     if (provinceId) {
       try {
-        const response = await fetch(`/get-cantons/${provinceId}`);
+        const response = await fetch(`/api/get-cantons/${provinceId}`);
         const data = await response.json();
         setCantons(data);
       } catch (error) {
@@ -42,29 +47,48 @@ export default function Register({ provinces }) {
     }
   };
 
-  const submit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    post(route("register"));
+
+    try {
+      const response = await fetch("/api/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setErrors(data.errors || {});
+        throw new Error(data.message || "Registration failed");
+      }
+
+      // Redirigir a login después de registro exitoso
+      navigate("/login");
+    } catch (error) {
+      console.error("Registration error:", error);
+    }
   };
 
   return (
     <GuestLayout>
-      <Head title="Register" />
-
-      <form onSubmit={submit}>
+      <form onSubmit={handleSubmit}>
         {/* Name */}
         <div>
           <InputLabel htmlFor="name" value="Name" />
           <TextInput
             id="name"
             name="name"
-            value={data.name}
+            value={formData.name}
             className="block mt-1 w-full"
             autoComplete="name"
             isFocused
-            onChange={(e) => setData("name", e.target.value)}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           />
-          <InputError message={errors.name} className="mt-2" />
+          {errors.name && <InputError message={errors.name} className="mt-2" />}
         </div>
 
         {/* Last Name */}
@@ -73,12 +97,14 @@ export default function Register({ provinces }) {
           <TextInput
             id="lastname"
             name="lastname"
-            value={data.lastname}
+            value={formData.lastname}
             className="block mt-1 w-full"
             autoComplete="lastname"
-            onChange={(e) => setData("lastname", e.target.value)}
+            onChange={(e) =>
+              setFormData({ ...formData, lastname: e.target.value })
+            }
           />
-          <InputError message={errors.lastname} className="mt-2" />
+          {errors.name && <InputError message={errors.name} className="mt-2" />}
         </div>
 
         {/* Email */}
@@ -88,12 +114,14 @@ export default function Register({ provinces }) {
             id="email"
             type="email"
             name="email"
-            value={data.email}
+            value={formData.email}
             className="block mt-1 w-full"
             autoComplete="username"
-            onChange={(e) => setData("email", e.target.value)}
+            onChange={(e) =>
+              setFormData({ ...formData, email: e.target.value })
+            }
           />
-          <InputError message={errors.email} className="mt-2" />
+          {errors.name && <InputError message={errors.name} className="mt-2" />}
         </div>
 
         {/* Phone */}
@@ -102,12 +130,14 @@ export default function Register({ provinces }) {
           <TextInput
             id="phone"
             name="phone"
-            value={data.phone}
+            value={formData.phone}
             className="block mt-1 w-full"
             autoComplete="phone"
-            onChange={(e) => setData("phone", e.target.value)}
+            onChange={(e) =>
+              setFormData({ ...formData, phone: e.target.value })
+            }
           />
-          <InputError message={errors.phone} className="mt-2" />
+          {errors.name && <InputError message={errors.name} className="mt-2" />}
         </div>
 
         {/* Province */}
@@ -117,11 +147,11 @@ export default function Register({ provinces }) {
             name="province"
             label="Province"
             options={provinces}
-            value={data.province}
+            value={formData.province}
             onChange={handleProvinceChange}
             required
           />
-          <InputError message={errors.province} className="mt-2" />
+          {errors.name && <InputError message={errors.name} className="mt-2" />}
         </div>
 
         {/* Canton */}
@@ -131,11 +161,13 @@ export default function Register({ provinces }) {
             name="canton"
             label="Canton"
             options={cantons}
-            value={data.canton}
-            onChange={(e) => setData("canton", e.target.value)}
+            value={formData.canton}
+            onChange={(e) =>
+              setFormData({ ...formData, canton: e.target.value })
+            }
             required
           />
-          <InputError message={errors.canton} className="mt-2" />
+          {errors.name && <InputError message={errors.name} className="mt-2" />}
         </div>
 
         {/* Address */}
@@ -144,11 +176,13 @@ export default function Register({ provinces }) {
           <TextInput
             id="address"
             name="address"
-            value={data.address}
+            value={formData.address}
             className="block mt-1 w-full"
-            onChange={(e) => setData("address", e.target.value)}
+            onChange={(e) =>
+              setFormData({ ...formData, address: e.target.value })
+            }
           />
-          <InputError message={errors.address} className="mt-2" />
+          {errors.name && <InputError message={errors.name} className="mt-2" />}
         </div>
 
         {/* Birth Date */}
@@ -157,12 +191,14 @@ export default function Register({ provinces }) {
           <DateInput
             id="birth_date"
             name="birth_date"
-            value={data.birth_date}
+            value={formData.birth_date}
             className="block mt-1 w-full"
-            onChange={(e) => setData("birth_date", e.target.value)}
+            onChange={(e) =>
+              setFormData({ ...formData, birth_date: e.target.value })
+            }
             required
           />
-          <InputError message={errors.birth_date} className="mt-2" />
+          {errors.name && <InputError message={errors.name} className="mt-2" />}
         </div>
 
         {/* Password */}
@@ -172,13 +208,15 @@ export default function Register({ provinces }) {
             id="password"
             type="password"
             name="password"
-            value={data.password}
+            value={formData.password}
             className="block mt-1 w-full"
             autoComplete="new-password"
-            onChange={(e) => setData("password", e.target.value)}
+            onChange={(e) =>
+              setFormData({ ...formData, password: e.target.value })
+            }
             required
           />
-          <InputError message={errors.password} className="mt-2" />
+          {errors.name && <InputError message={errors.name} className="mt-2" />}
         </div>
 
         {/* Confirm Password */}
@@ -191,35 +229,36 @@ export default function Register({ provinces }) {
             id="password_confirmation"
             type="password"
             name="password_confirmation"
-            value={data.password_confirmation}
+            value={formData.password_confirmation}
             className="block mt-1 w-full"
             autoComplete="new-password"
-            onChange={(e) => setData("password_confirmation", e.target.value)}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                password_confirmation: e.target.value,
+              })
+            }
             required
           />
-          <InputError message={errors.password_confirmation} className="mt-2" />
+          {errors.name && <InputError message={errors.name} className="mt-2" />}
         </div>
 
         <div className="flex items-center justify-end mt-4">
           <Link
-            href={route("login")}
+            to="/login"
             className="pr-5 justify-start underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800"
           >
             Already registered?
           </Link>
 
-          <PrimaryButton className="ms-4" disabled={processing}>
-            Register
-          </PrimaryButton>
+          <PrimaryButton type="submit">Register</PrimaryButton>
 
-          {route().has("chamberoRegister") && (
-            <Link
-              href={route("chamberoRegister")}
-              className="text-center rounded-md px-3 py-2 text-black ring-1 ring-transparent transition hover:text-black/70 focus:outline-none focus-visible:ring-[#FF2D20] dark:text-white dark:hover:text-white/80 dark:focus-visible:ring-white"
-            >
-              Register as Chambero
-            </Link>
-          )}
+          <Link
+            to="/chambero-register"
+            className="text-center rounded-md px-3 py-2 text-black ring-1 ring-transparent transition hover:text-black/70 focus:outline-none focus-visible:ring-[#FF2D20] dark:text-white dark:hover:text-white/80 dark:focus-visible:ring-white"
+          >
+            Register as Chambero
+          </Link>
         </div>
       </form>
     </GuestLayout>
