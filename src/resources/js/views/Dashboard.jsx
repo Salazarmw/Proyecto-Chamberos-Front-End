@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import AppLayout from "./layouts/AppLayout";
+import { useState, useEffect } from "react";
+import AppLayout from "./layouts/AuthLayout";
 import DropdownRegister from "./components/DropdownRegister";
 import Card from "./components/Card";
 
@@ -8,30 +8,31 @@ export default function Dashboard({
   initialTags,
   initialUsers,
 }) {
-  const [provinces] = useState(initialProvinces); // Eliminamos setProvinces
-  const [tags, setTags] = useState(initialTags);
-  const [users] = useState(initialUsers); // Eliminamos setUsers
-  const [filteredUsers, setFilteredUsers] = useState(initialUsers);
+  const [provinces] = useState(initialProvinces || []);
+  const [tags, setTags] = useState(initialTags || []);
+  const [users, setUsers] = useState(initialUsers || []);
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedProvince, setSelectedProvince] = useState("");
   const [selectedCanton, setSelectedCanton] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedTags, setSelectedTags] = useState([]);
   const [cantons, setCantons] = useState([]);
+  const [selectedTags, setSelectedTags] = useState([]);
 
   // Manejar cambio de provincia
-  const handleProvinceChange = async (e) => {
+  const handleProvinceChange = (e) => {
     const provinceId = e.target.value;
     setSelectedProvince(provinceId);
     setSelectedCanton("");
 
     if (provinceId) {
-      try {
-        const response = await fetch(`/api/get-cantons/${provinceId}`);
-        const data = await response.json();
-        setCantons(data);
-      } catch (error) {
-        console.error("Error fetching cantons:", error);
-      }
+      fetch(`/get-cantons/${provinceId}`)
+        .then((response) => response.json())
+        .then((data) => {
+          setCantons(data);
+        })
+        .catch((error) => {
+          console.error("Error fetching cantons:", error);
+          setCantons([]);
+        });
     } else {
       setCantons([]);
     }
@@ -41,16 +42,20 @@ export default function Dashboard({
   const handleSearch = (e) => {
     const query = e.target.value.toLowerCase();
     setSearchQuery(query);
-
-    const filtered = tags.filter((tag) =>
-      tag.description.toLowerCase().includes(query)
-    );
-    setTags(filtered);
   };
 
-  // Aplicar filtros (memoizado con useCallback)
-  const applyFilters = useCallback(() => {
-    let filtered = users;
+  // Manejo del cambio de etiquetas
+  const handleTagChange = (tagId) => {
+    setSelectedTags((prev) =>
+      prev.includes(tagId)
+        ? prev.filter((id) => id !== tagId)
+        : [...prev, tagId]
+    );
+  };
+
+  // Aplicar filtros
+  const handleFilter = () => {
+    let filtered = [...initialUsers];
 
     if (selectedProvince) {
       filtered = filtered.filter((user) => user.province === selectedProvince);
@@ -62,27 +67,38 @@ export default function Dashboard({
 
     if (selectedTags.length > 0) {
       filtered = filtered.filter((user) =>
-        selectedTags.every((tag) => user.tags.includes(tag))
+        selectedTags.every(
+          (tagId) => user.tags && user.tags.some((tag) => tag.id === tagId)
+        )
       );
     }
 
-    setFilteredUsers(filtered);
-  }, [selectedProvince, selectedCanton, selectedTags, users]);
+    setUsers(filtered);
+  };
 
   useEffect(() => {
-    applyFilters();
-  }, [applyFilters]);
+    if (initialTags) {
+      if (searchQuery) {
+        const filtered = initialTags.filter((tag) =>
+          tag.description.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+        setTags(filtered);
+      } else {
+        setTags(initialTags);
+      }
+    }
+  }, [searchQuery, initialTags]);
 
   return (
-    <AppLayout header={<h1>Perfiles de Chamberos</h1>}>
+    <AppLayout>
       <div className="container mx-auto flex space-x-6">
-        {/* Filtros */}
+        {/* Filters */}
         <div className="w-1/4 p-6 bg-gray-100 dark:bg-gray-800 rounded-lg shadow-md h-full">
           <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4">
             Filtros
           </h2>
 
-          {/* Provincia */}
+          {/* Province */}
           <div className="mt-4">
             <DropdownRegister
               id="province"
@@ -95,7 +111,7 @@ export default function Dashboard({
             />
           </div>
 
-          {/* Cantón */}
+          {/* Canton */}
           <div className="mt-4">
             <DropdownRegister
               id="canton"
@@ -108,7 +124,7 @@ export default function Dashboard({
             />
           </div>
 
-          {/* Búsqueda */}
+          {/* Search */}
           <div className="mb-4">
             <label
               htmlFor="searchJobs"
@@ -126,52 +142,51 @@ export default function Dashboard({
             />
           </div>
 
-          {/* Lista de trabajos */}
+          {/* Job List */}
           <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
             Trabajos
           </h3>
           <div id="jobsList" className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {tags.map((tag) => (
-              <label key={tag.id} className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  value={tag.id}
-                  checked={selectedTags.includes(tag.id)}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setSelectedTags((prev) =>
-                      prev.includes(value)
-                        ? prev.filter((t) => t !== value)
-                        : [...prev, value]
-                    );
-                  }}
-                  className="form-checkbox h-5 w-5 text-indigo-600 dark:text-indigo-400"
-                />
-                <span className="text-gray-700 dark:text-gray-300">
-                  {tag.description}
-                </span>
-              </label>
-            ))}
+            {tags && tags.length > 0 ? (
+              tags.map((tag) => (
+                <label key={tag.id} className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    value={tag.id}
+                    checked={selectedTags.includes(tag.id)}
+                    onChange={() => handleTagChange(tag.id)}
+                    className="form-checkbox h-5 w-5 text-indigo-600 dark:text-indigo-400"
+                  />
+                  <span className="text-gray-700 dark:text-gray-300">
+                    {tag.description}
+                  </span>
+                </label>
+              ))
+            ) : (
+              <p className="text-gray-700 dark:text-gray-300">
+                No hay trabajos disponibles.
+              </p>
+            )}
           </div>
 
-          {/* Botón de filtrar */}
+          {/* Filter button */}
           <button
-            onClick={applyFilters}
+            onClick={handleFilter}
             className="mt-4 w-full bg-indigo-600 text-white py-2 rounded-md shadow-lg hover:bg-indigo-700 focus:outline-none"
           >
             Filtrar
           </button>
         </div>
 
-        {/* Lista de chamberos */}
+        {/* List of chamberos */}
         <div className="w-3/4 p-6">
           <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-6">
             Perfiles de Chamberos
           </h1>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
-            {filteredUsers.length > 0 ? (
-              filteredUsers.map((user) => (
+            {users && users.length > 0 ? (
+              users.map((user) => (
                 <Card
                   key={user.id}
                   title={user.name}

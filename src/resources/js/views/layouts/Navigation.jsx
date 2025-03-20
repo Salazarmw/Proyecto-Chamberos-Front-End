@@ -1,12 +1,31 @@
+// resources/js/views/layouts/Navigation.jsx
 import React, { useState } from "react";
-import { Link, usePage } from "@inertiajs/react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import ApplicationLogo from "../components/ApplicationLogo";
 import Dropdown from "../components/Dropdown";
 import ResponsiveNavLink from "../components/ResponsiveNavLink";
 
-export default function Navigation() {
+export default function Navigation({ auth }) {
   const [open, setOpen] = useState(false);
-  const { auth } = usePage().props;
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Función para reemplazar route().current()
+  const isCurrentRoute = (routePath) => {
+    return location.pathname === routePath;
+  };
+
+  // Función para reemplazar route()
+  const getRoute = (routeName) => {
+    const routes = {
+      dashboard: "/",
+      quotations: "/quotations",
+      jobs: "/jobs",
+      "profile.edit": "/profile/edit",
+      logout: "/logout",
+    };
+    return routes[routeName] || "/";
+  };
 
   return (
     <nav className="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
@@ -16,7 +35,7 @@ export default function Navigation() {
           <div className="flex">
             {/* Logo */}
             <div className="shrink-0 flex items-center">
-              <Link href={route("dashboard")}>
+              <Link to={getRoute("dashboard")}>
                 <ApplicationLogo className="block h-9 w-auto fill-current text-gray-800 dark:text-gray-200" />
               </Link>
             </div>
@@ -24,20 +43,20 @@ export default function Navigation() {
             {/* Navigation Links */}
             <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
               <ResponsiveNavLink
-                href={route("dashboard")}
-                active={route().current("dashboard")}
+                to={getRoute("dashboard")}
+                active={isCurrentRoute(getRoute("dashboard"))}
               >
                 Dashboard
               </ResponsiveNavLink>
               <ResponsiveNavLink
-                href={route("quotations")}
-                active={route().current("quotations")}
+                to={getRoute("quotations")}
+                active={isCurrentRoute(getRoute("quotations"))}
               >
                 Cotizaciones
               </ResponsiveNavLink>
               <ResponsiveNavLink
-                href={route("jobs")}
-                active={route().current("jobs")}
+                to={getRoute("jobs")}
+                active={isCurrentRoute(getRoute("jobs"))}
               >
                 Trabajos
               </ResponsiveNavLink>
@@ -46,10 +65,12 @@ export default function Navigation() {
 
           {/* Settings Dropdown */}
           <div className="hidden sm:flex sm:items-center sm:ms-6">
-            <Dropdown>
-              <Dropdown.Trigger>
+            <Dropdown
+              align="right"
+              width="48"
+              trigger={
                 <button className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none transition ease-in-out duration-150">
-                  <div>{auth.user.name}</div>
+                  <div>{auth?.user?.name || "Usuario"}</div>
                   <div className="ms-1">
                     <svg className="fill-current h-4 w-4" viewBox="0 0 20 20">
                       <path
@@ -59,16 +80,26 @@ export default function Navigation() {
                     </svg>
                   </div>
                 </button>
-              </Dropdown.Trigger>
-
-              <Dropdown.Content>
-                <Dropdown.Link href={route("profile.edit")}>
+              }
+            >
+              <div className="py-2">
+                <Link
+                  to={getRoute("profile.edit")}
+                  className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
+                >
                   Perfil
-                </Dropdown.Link>
-                <Dropdown.Link href={route("logout")} method="post" as="button">
+                </Link>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    // logout();
+                    navigate("/");
+                  }}
+                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
+                >
                   Cerrar Sesión
-                </Dropdown.Link>
-              </Dropdown.Content>
+                </button>
+              </div>
             </Dropdown>
           </div>
 
@@ -109,10 +140,22 @@ export default function Navigation() {
       <div className={`${open ? "block" : "hidden"} sm:hidden`}>
         <div className="pt-2 pb-3 space-y-1">
           <ResponsiveNavLink
-            href={route("dashboard")}
-            active={route().current("dashboard")}
+            to={getRoute("dashboard")}
+            active={isCurrentRoute(getRoute("dashboard"))}
           >
             Dashboard
+          </ResponsiveNavLink>
+          <ResponsiveNavLink
+            to={getRoute("quotations")}
+            active={isCurrentRoute(getRoute("quotations"))}
+          >
+            Cotizaciones
+          </ResponsiveNavLink>
+          <ResponsiveNavLink
+            to={getRoute("jobs")}
+            active={isCurrentRoute(getRoute("jobs"))}
+          >
+            Trabajos
           </ResponsiveNavLink>
         </div>
 
@@ -120,18 +163,25 @@ export default function Navigation() {
         <div className="pt-4 pb-1 border-t border-gray-200 dark:border-gray-600">
           <div className="px-4">
             <div className="font-medium text-base text-gray-800 dark:text-gray-200">
-              {auth.user.name}
+              {auth?.user?.name || "Usuario"}
             </div>
             <div className="font-medium text-sm text-gray-500">
-              {auth.user.email}
+              {auth?.user?.email || "usuario@ejemplo.com"}
             </div>
           </div>
 
           <div className="mt-3 space-y-1">
-            <ResponsiveNavLink href={route("profile.edit")}>
+            <ResponsiveNavLink to={getRoute("profile.edit")}>
               Perfil
             </ResponsiveNavLink>
-            <ResponsiveNavLink href={route("logout")} method="post" as="button">
+            <ResponsiveNavLink
+              to={getRoute("logout")}
+              onClick={(e) => {
+                e.preventDefault();
+                // logout();
+                navigate("/");
+              }}
+            >
               Cerrar Sesión
             </ResponsiveNavLink>
           </div>

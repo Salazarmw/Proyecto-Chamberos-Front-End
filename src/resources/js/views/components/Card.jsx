@@ -1,4 +1,3 @@
-// resources/js/Components/Card.jsx
 import { Link } from "react-router-dom";
 
 export default function Card({
@@ -14,7 +13,7 @@ export default function Card({
   // Construir la URL de la foto de perfil
   const profilePhotoUrl = profilePhoto.startsWith("http")
     ? profilePhoto
-    : `/storage/${profilePhoto}`;
+    : `/storage/profile-photos/${profilePhoto}`;
 
   return (
     <div className="border border-gray-300 dark:border-gray-700 rounded-lg p-4 shadow-md bg-white dark:bg-gray-800 max-w-xs w-full h-[350px]">

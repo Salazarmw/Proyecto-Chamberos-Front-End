@@ -1,4 +1,3 @@
-/* src/resources/js/views/auth/Register.jsx */
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import GuestLayout from "../layouts/GuestLayout";
