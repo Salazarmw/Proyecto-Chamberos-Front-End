@@ -1,4 +1,3 @@
-// resources/js/views/layouts/Navigation.jsx
 import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import ApplicationLogo from "../components/ApplicationLogo";
@@ -10,12 +9,10 @@ export default function Navigation({ auth }) {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Función para reemplazar route().current()
   const isCurrentRoute = (routePath) => {
     return location.pathname === routePath;
   };
 
-  // Función para reemplazar route()
   const getRoute = (routeName) => {
     const routes = {
       dashboard: "/",

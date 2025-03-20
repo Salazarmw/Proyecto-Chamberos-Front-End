@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import GuestLayout from "../layouts/GuestLayout";
 import InputLabel from "../components/InputLabel";
 import TextInput from "../components/TextInput";
 import InputError from "../components/InputError";
@@ -45,7 +44,7 @@ export default function Login() {
   };
 
   return (
-    <GuestLayout>
+    <>
       <AuthSessionStatus status={status} className="mb-4" />
 
       <form onSubmit={handleSubmit}>
@@ -121,6 +120,6 @@ export default function Login() {
           </Link>
         </div>
       </form>
-    </GuestLayout>
+    </>
   );
 }

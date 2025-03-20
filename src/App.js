@@ -1,4 +1,4 @@
-// src\App.js
+//src\App.js
 
 import {
   BrowserRouter as Router,
@@ -16,13 +16,15 @@ import AppLayout from "./resources/js/views/layouts/AppLayout";
 import Login from "./resources/js/views/auth/Login";
 import Register from "./resources/js/views/auth/Register";
 import Dashboard from "./resources/js/views/Dashboard";
-import Profile from "./pages/Profile";
+import EditProfile from "./resources/js/views/profile/EditProfile";
+import ViewProfile from "./resources/js//views/profile/ViewProfile";
 import Chamberos from "./pages/Chamberos";
 import Quotations from "./pages/Quotations";
 import CreateQuotation from "./pages/CreateQuotation";
 import Counteroffer from "./pages/Counteroffer";
 import Jobs from "./pages/Jobs";
 import Reviews from "./pages/Reviews";
+import NotFound from "./pages/NotFound";
 
 function App() {
   return (
@@ -60,10 +62,18 @@ function App() {
               }
             />
             <Route
-              path="/profile"
+              path="/profile/edit"
               element={
                 <AppLayout>
-                  <Profile />
+                  <EditProfile />
+                </AppLayout>
+              }
+            />
+            <Route
+              path="/profile/:id"
+              element={
+                <AppLayout>
+                  <ViewProfile />
                 </AppLayout>
               }
             />
