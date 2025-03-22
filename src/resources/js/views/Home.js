@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import api from "../api";
+import api from "../../../src/api";
 
 function Home() {
   const [data, setData] = useState([]);
