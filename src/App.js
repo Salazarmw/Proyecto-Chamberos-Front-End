@@ -13,20 +13,21 @@ import AppLayout from "./resources/js/views/layouts/AppLayout";
 
 import Login from "./resources/js/views/auth/Login";
 import Register from "./resources/js/views/auth/Register";
+import ChamberoRegister from "./resources/js/views/auth/ChamberoRegister";
 import Dashboard from "./resources/js/views/Dashboard";
 import EditProfile from "./resources/js/views/profile/EditProfile";
 import ViewProfile from "./resources/js/views/profile/ViewProfile";
 import Quotations from "./resources/js/views/quotations/Quotations";
 import CreateQuotation from "./resources/js/views/quotations/CreateQuotation";
 import Counteroffer from "./resources/js/views/quotations/Counteroffer";
-import Jobs from "./pages/Jobs";
-import Reviews from "./pages/Reviews";
-import NotFound from "./pages/NotFound";
+import Jobs from "./resources/js/views/jobs/Jobs";
+import Reviews from "./resources/js/views/reviews/CreateReview";
+import NotFound from "./resources/js/views/NotFound";
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
+    <Router>
+      <AuthProvider>
         <Routes>
           {/* Rutas públicas */}
           <Route element={<PublicRoute />}>
@@ -43,6 +44,14 @@ function App() {
               element={
                 <GuestLayout>
                   <Register />
+                </GuestLayout>
+              }
+            />
+            <Route
+              path="/chambero-register"
+              element={
+                <GuestLayout>
+                  <ChamberoRegister />
                 </GuestLayout>
               }
             />
@@ -120,8 +129,8 @@ function App() {
           <Route path="/" element={<Navigate to="/dashboard" />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </Router>
-    </AuthProvider>
+      </AuthProvider>
+    </Router>
   );
 }
 

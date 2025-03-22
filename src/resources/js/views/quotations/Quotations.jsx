@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { useAuth } from "../../../../context/AuthContext";
+import { AuthContext } from "../../../../context/AuthContext";
 
 const Quotations = () => {
   const [quotations, setQuotations] = useState([]);
   const [filters, setFilters] = useState([]);
-  const { user } = useAuth();
+  const { user } = AuthContext();
   const navigate = useNavigate();
 
   useEffect(() => {

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { useAuth } from "../context/AuthContext";
+import { AuthContext } from "../../../../context/AuthContext";
 
 const CreateQuotation = () => {
   const { chamberoId } = useParams();
-  const { user } = useAuth();
+  const { user } = AuthContext();
   const navigate = useNavigate();
   const [chambero, setChambero] = useState(null);
   const [formData, setFormData] = useState({
