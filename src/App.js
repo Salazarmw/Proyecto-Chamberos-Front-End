@@ -1,5 +1,3 @@
-//src\App.js
-
 import {
   BrowserRouter as Router,
   Routes,
@@ -17,11 +15,10 @@ import Login from "./resources/js/views/auth/Login";
 import Register from "./resources/js/views/auth/Register";
 import Dashboard from "./resources/js/views/Dashboard";
 import EditProfile from "./resources/js/views/profile/EditProfile";
-import ViewProfile from "./resources/js//views/profile/ViewProfile";
-import Chamberos from "./pages/Chamberos";
-import Quotations from "./pages/Quotations";
-import CreateQuotation from "./pages/CreateQuotation";
-import Counteroffer from "./pages/Counteroffer";
+import ViewProfile from "./resources/js/views/profile/ViewProfile";
+import Quotations from "./resources/js/views/quotations/Quotations";
+import CreateQuotation from "./resources/js/views/quotations/CreateQuotation";
+import Counteroffer from "./resources/js/views/quotations/Counteroffer";
 import Jobs from "./pages/Jobs";
 import Reviews from "./pages/Reviews";
 import NotFound from "./pages/NotFound";
@@ -74,14 +71,6 @@ function App() {
               element={
                 <AppLayout>
                   <ViewProfile />
-                </AppLayout>
-              }
-            />
-            <Route
-              path="/chamberos"
-              element={
-                <AppLayout>
-                  <Chamberos />
                 </AppLayout>
               }
             />
