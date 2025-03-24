@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import InputLabel from "../components/InputLabel";
 import TextInput from "../components/TextInput";
@@ -6,8 +6,12 @@ import InputError from "../components/InputError";
 import DropdownRegister from "../components/DropdownRegister";
 import DateInput from "../components/DateInput";
 import PrimaryButton from "../components/PrimaryButton";
+import {
+  fetchProvinces,
+  fetchCantons,
+} from "../../../../services/locationService";
 
-export default function Register({ provinces }) {
+export default function Register() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: "",
@@ -23,7 +27,16 @@ export default function Register({ provinces }) {
   });
 
   const [cantons, setCantons] = useState([]);
+  const [provinces, setProvinces] = useState([]);
   const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    const loadProvinces = async () => {
+      const provincesData = await fetchProvinces();
+      setProvinces(provincesData);
+    };
+    loadProvinces();
+  }, []);
 
   const handleProvinceChange = async (e) => {
     const provinceId = e.target.value;
@@ -34,13 +47,8 @@ export default function Register({ provinces }) {
     });
 
     if (provinceId) {
-      try {
-        const response = await fetch(`/api/get-cantons/${provinceId}`);
-        const data = await response.json();
-        setCantons(data);
-      } catch (error) {
-        console.error("Error fetching cantons:", error);
-      }
+      const cantonsData = await fetchCantons(provinceId);
+      setCantons(cantonsData);
     } else {
       setCantons([]);
     }
@@ -48,14 +56,15 @@ export default function Register({ provinces }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const userType = "user"; // Define el tipo de usuario
 
     try {
-      const response = await fetch("/api/register", {
+      const response = await fetch("http://localhost:5000/api/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, user_type: userType }), // Agrega el tipo de usuario
       });
 
       const data = await response.json();
@@ -102,7 +111,9 @@ export default function Register({ provinces }) {
             setFormData({ ...formData, lastname: e.target.value })
           }
         />
-        {errors.name && <InputError message={errors.name} className="mt-2" />}
+        {errors.lastname && (
+          <InputError message={errors.lastname} className="mt-2" />
+        )}
       </div>
 
       {/* Email */}
@@ -117,7 +128,7 @@ export default function Register({ provinces }) {
           autoComplete="username"
           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
         />
-        {errors.name && <InputError message={errors.name} className="mt-2" />}
+        {errors.email && <InputError message={errors.email} className="mt-2" />}
       </div>
 
       {/* Phone */}
@@ -127,39 +138,41 @@ export default function Register({ provinces }) {
           id="phone"
           name="phone"
           value={formData.phone}
-          className="block mt-1 w-full"
-          autoComplete="phone"
+          className="block mt- 1 w-full"
+          autoComplete="tel"
           onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
         />
-        {errors.name && <InputError message={errors.name} className="mt-2" />}
+        {errors.phone && <InputError message={errors.phone} className="mt-2" />}
       </div>
 
       {/* Province */}
       <div className="mt-4">
+        <InputLabel htmlFor="province" value="Province" />
         <DropdownRegister
           id="province"
           name="province"
-          label="Province"
-          options={provinces}
           value={formData.province}
+          options={provinces}
           onChange={handleProvinceChange}
-          required
         />
-        {errors.name && <InputError message={errors.name} className="mt-2" />}
+        {errors.province && (
+          <InputError message={errors.province} className="mt-2" />
+        )}
       </div>
 
       {/* Canton */}
       <div className="mt-4">
+        <InputLabel htmlFor="canton" value="Canton" />
         <DropdownRegister
           id="canton"
           name="canton"
-          label="Canton"
-          options={cantons}
           value={formData.canton}
+          options={cantons}
           onChange={(e) => setFormData({ ...formData, canton: e.target.value })}
-          required
         />
-        {errors.name && <InputError message={errors.name} className="mt-2" />}
+        {errors.canton && (
+          <InputError message={errors.canton} className="mt-2" />
+        )}
       </div>
 
       {/* Address */}
@@ -174,7 +187,9 @@ export default function Register({ provinces }) {
             setFormData({ ...formData, address: e.target.value })
           }
         />
-        {errors.name && <InputError message={errors.name} className="mt-2" />}
+        {errors.address && (
+          <InputError message={errors.address} className="mt-2" />
+        )}
       </div>
 
       {/* Birth Date */}
@@ -184,13 +199,13 @@ export default function Register({ provinces }) {
           id="birth_date"
           name="birth_date"
           value={formData.birth_date}
-          className="block mt-1 w-full"
           onChange={(e) =>
             setFormData({ ...formData, birth_date: e.target.value })
           }
-          required
         />
-        {errors.name && <InputError message={errors.name} className="mt-2" />}
+        {errors.birth_date && (
+          <InputError message={errors.birth_date} className="mt-2" />
+        )}
       </div>
 
       {/* Password */}
@@ -202,16 +217,16 @@ export default function Register({ provinces }) {
           name="password"
           value={formData.password}
           className="block mt-1 w-full"
-          autoComplete="new-password"
           onChange={(e) =>
             setFormData({ ...formData, password: e.target.value })
           }
-          required
         />
-        {errors.name && <InputError message={errors.name} className="mt-2" />}
+        {errors.password && (
+          <InputError message={errors.password} className="mt-2" />
+        )}
       </div>
 
-      {/* Confirm Password */}
+      {/* Password Confirmation */}
       <div className="mt-4">
         <InputLabel htmlFor="password_confirmation" value="Confirm Password" />
         <TextInput
@@ -220,16 +235,13 @@ export default function Register({ provinces }) {
           name="password_confirmation"
           value={formData.password_confirmation}
           className="block mt-1 w-full"
-          autoComplete="new-password"
           onChange={(e) =>
-            setFormData({
-              ...formData,
-              password_confirmation: e.target.value,
-            })
+            setFormData({ ...formData, password_confirmation: e.target.value })
           }
-          required
         />
-        {errors.name && <InputError message={errors.name} className="mt-2" />}
+        {errors.password_confirmation && (
+          <InputError message={errors.password_confirmation} className="mt-2" />
+        )}
       </div>
 
       <div className="flex items-center justify-end mt-4">
