@@ -5,6 +5,7 @@ import TextInput from "../components/TextInput";
 import InputError from "../components/InputError";
 import PrimaryButton from "../components/PrimaryButton";
 import AuthSessionStatus from "../components/AuthSessionStatus";
+import { loginUser } from "../../../../services/authService";
 
 export default function Login() {
   const [formData, setFormData] = useState({
@@ -21,17 +22,9 @@ export default function Login() {
     e.preventDefault();
 
     try {
-      const response = await fetch("/api/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
+      const data = await loginUser(formData);
 
-      const data = await response.json();
-
-      if (response.ok) {
+      if (data) {
         navigate("/dashboard");
       } else {
         setErrors(data.errors || {});

@@ -83,7 +83,7 @@ export default function Register({ provinces }) {
           value={formData.name}
           className="block mt-1 w-full"
           autoComplete="name"
-          isFocused
+          autoFocus={true}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
         />
         {errors.name && <InputError message={errors.name} className="mt-2" />}
