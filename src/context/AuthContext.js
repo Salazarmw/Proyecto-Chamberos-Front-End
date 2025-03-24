@@ -1,6 +1,6 @@
 import { createContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getUser } from "../services/authService";
+import { loginUser } from "../services/authService";
 
 export const AuthContext = createContext();
 
@@ -10,7 +10,7 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const userData = await getUser();
+      const userData = await loginUser();
       if (userData) {
         setUser(userData);
       } else {
