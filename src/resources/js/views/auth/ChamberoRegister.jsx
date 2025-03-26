@@ -5,10 +5,7 @@ import TextInput from "../components/TextInput";
 import InputError from "../components/InputError";
 import DropdownRegister from "../components/DropdownRegister";
 import DateInput from "../components/DateInput";
-import {
-  fetchProvinces,
-  fetchCantons,
-} from "../../../../services/locationService";
+import { fetchProvinces, fetchCantons } from "../../../../services/locationService";
 
 export default function ChamberoRegister() {
   const navigate = useNavigate();
@@ -31,25 +28,43 @@ export default function ChamberoRegister() {
 
   useEffect(() => {
     const loadProvinces = async () => {
-      const provincesData = await fetchProvinces();
-      setProvinces(provincesData);
+      try {
+        const response = await fetch("http://localhost:5000/api/provinces");
+        if (!response.ok) throw new Error("Failed to fetch provinces");
+        const provincesData = await response.json();
+        console.log("Provinces:", provincesData); // Log para depurar
+        setProvinces(
+          provincesData.map((province) => ({
+            value: province._id, // Usar el ID como valor
+            label: province.name, // Usar el nombre como etiqueta
+          }))
+        );
+      } catch (error) {
+        console.error("Error loading provinces:", error);
+      }
     };
+
     loadProvinces();
   }, []);
 
   const handleProvinceChange = async (e) => {
-    const provinceId = e.target.value;
+    const provinceId = e.target.value; // Este será el ID de la provincia
     setFormData({
       ...formData,
       province: provinceId,
-      canton: "",
+      canton: "", // Resetear el cantón seleccionado
     });
 
     if (provinceId) {
-      const cantonsData = await fetchCantons(provinceId);
-      setCantons(cantonsData);
+      try {
+        const cantonsData = await fetchCantons(provinceId);
+        console.log("Cantons fetched:", cantonsData); // Log para depurar
+        setCantons(cantonsData);
+      } catch (error) {
+        console.error("Error fetching cantons:", error);
+      }
     } else {
-      setCantons([]);
+      setCantons([]); // Limpiar los cantones si no hay provincia seleccionada
     }
   };
 
@@ -170,7 +185,7 @@ export default function ChamberoRegister() {
           onChange={(e) => setFormData({ ...formData, canton: e.target.value })}
         />
         {errors.canton && (
-          <InputError message={errors.canton} className="mt- 2" />
+          <InputError message={errors.canton} className="mt-2" />
         )}
       </div>
 
