@@ -1,4 +1,10 @@
-export default function DropdownRegister({ id, name, value, options, onChange }) {
+export default function DropdownRegister({
+  id,
+  name,
+  value,
+  options,
+  onChange,
+}) {
   return (
     <select
       id={id}

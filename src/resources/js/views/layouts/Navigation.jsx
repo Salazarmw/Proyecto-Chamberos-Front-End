@@ -1,13 +1,15 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import ApplicationLogo from "../components/ApplicationLogo";
 import Dropdown from "../components/Dropdown";
 import ResponsiveNavLink from "../components/ResponsiveNavLink";
+import { AuthContext } from "../../../../context/AuthContext";
 
 export default function Navigation({ auth }) {
   const [open, setOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { logout } = useContext(AuthContext);
 
   const isCurrentRoute = (routePath) => {
     return location.pathname === routePath;
@@ -22,6 +24,11 @@ export default function Navigation({ auth }) {
       logout: "/logout",
     };
     return routes[routeName] || "/";
+  };
+
+  const handleLogout = (e) => {
+    e.preventDefault();
+    logout();
   };
 
   return (
@@ -87,11 +94,7 @@ export default function Navigation({ auth }) {
                   Perfil
                 </Link>
                 <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    // logout();
-                    navigate("/");
-                  }}
+                  onClick={handleLogout}
                   className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
                 >
                   Cerrar Sesión
@@ -171,14 +174,7 @@ export default function Navigation({ auth }) {
             <ResponsiveNavLink to={getRoute("profile.edit")}>
               Perfil
             </ResponsiveNavLink>
-            <ResponsiveNavLink
-              to={getRoute("logout")}
-              onClick={(e) => {
-                e.preventDefault();
-                // logout();
-                navigate("/");
-              }}
-            >
+            <ResponsiveNavLink to={getRoute("logout")} onClick={handleLogout}>
               Cerrar Sesión
             </ResponsiveNavLink>
           </div>
