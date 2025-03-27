@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import InputLabel from "../components/InputLabel";
 import TextInput from "../components/TextInput";
@@ -6,6 +6,7 @@ import InputError from "../components/InputError";
 import PrimaryButton from "../components/PrimaryButton";
 import AuthSessionStatus from "../components/AuthSessionStatus";
 import { loginUser } from "../../../../services/authService";
+import { AuthContext } from "../../../../context/AuthContext";
 
 export default function Login() {
   const [formData, setFormData] = useState({
@@ -17,6 +18,7 @@ export default function Login() {
   const [errors, setErrors] = useState({});
   const [status, setStatus] = useState(null);
   const navigate = useNavigate();
+  const { login } = useContext(AuthContext); // Obtener el método login del contexto
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -25,10 +27,10 @@ export default function Login() {
       const data = await loginUser(formData);
 
       if (data) {
-        navigate("/dashboard");
+        login(data); // Llama al método login del contexto para actualizar el estado global
       } else {
-        setErrors(data.errors || {});
-        setStatus(data.message);
+        setErrors({ general: "Invalid credentials" });
+        setStatus("Login failed");
       }
     } catch (error) {
       console.error("Login error:", error);

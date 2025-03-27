@@ -39,45 +39,51 @@ export default function Register() {
   }, []);
 
   const handleProvinceChange = async (e) => {
-    const provinceId = e.target.value;
+    const provinceId = e.target.value; // Este será el ID de la provincia
     setFormData({
       ...formData,
       province: provinceId,
-      canton: "",
+      canton: "", // Resetear el cantón seleccionado
     });
-
+  
     if (provinceId) {
-      const cantonsData = await fetchCantons(provinceId);
-      setCantons(cantonsData);
+      try {
+        const cantonsData = await fetchCantons(provinceId);
+        console.log("Cantons fetched:", cantonsData); // Log para depurar
+        setCantons(cantonsData);
+      } catch (error) {
+        console.error("Error fetching cantons:", error);
+      }
     } else {
-      setCantons([]);
+      setCantons([]); // Limpiar los cantones si no hay provincia seleccionada
     }
   };
-
+  const [error, setError] = useState(null);
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const userType = "user"; // Define el tipo de usuario
-
+  
     try {
-      const response = await fetch("http://localhost:5000/api/register", {
+      const response = await fetch("http://localhost:5000/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ ...formData, user_type: userType }), // Agrega el tipo de usuario
+        body: JSON.stringify({ email: formData.email, password: formData.password }), // Usar formData
       });
-
+  
       const data = await response.json();
-
+  
       if (!response.ok) {
-        setErrors(data.errors || {});
-        throw new Error(data.message || "Registration failed");
+        setError(data.message || "Login failed");
+        return;
       }
-
-      // Redirect to login after successful registration
-      navigate("/login");
-    } catch (error) {
-      console.error("Registration error:", error);
+  
+      // Guardar token y redirigir
+      localStorage.setItem("token", data.token);
+      navigate("/dashboard");
+    } catch (err) {
+      console.error("Login error:", err);
+      setError("An error occurred during login");
     }
   };
 
