@@ -29,6 +29,8 @@ export default function Register() {
   const [cantons, setCantons] = useState([]);
   const [provinces, setProvinces] = useState([]);
   const [errors, setErrors] = useState({});
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const loadProvinces = async () => {
@@ -39,51 +41,71 @@ export default function Register() {
   }, []);
 
   const handleProvinceChange = async (e) => {
-    const provinceId = e.target.value; // Este será el ID de la provincia
+    const provinceId = e.target.value;
     setFormData({
       ...formData,
       province: provinceId,
-      canton: "", // Resetear el cantón seleccionado
+      canton: "",
     });
-  
+
     if (provinceId) {
       try {
         const cantonsData = await fetchCantons(provinceId);
-        console.log("Cantons fetched:", cantonsData); // Log para depurar
+        console.log("Cantons fetched:", cantonsData);
         setCantons(cantonsData);
       } catch (error) {
         console.error("Error fetching cantons:", error);
       }
     } else {
-      setCantons([]); // Limpiar los cantones si no hay provincia seleccionada
+      setCantons([]);
     }
   };
-  const [error, setError] = useState(null);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+    setLoading(true);
+    setError(null);
+    setErrors({});
+
+    if (formData.password !== formData.password_confirmation) {
+      setErrors({ password_confirmation: "Las contraseñas no coinciden" });
+      setLoading(false);
+      return;
+    }
+
     try {
-      const response = await fetch("http://localhost:5000/api/auth/login", {
+      const userData = {
+        ...formData,
+        user_type: "client",
+      };
+
+      console.log("Registrando cliente:", userData);
+
+      const response = await fetch("http://localhost:5000/api/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email: formData.email, password: formData.password }), // Usar formData
+        body: JSON.stringify(userData),
       });
-  
+
       const data = await response.json();
-  
+
       if (!response.ok) {
-        setError(data.message || "Login failed");
+        setErrors(data.errors || {});
+        setError(data.message || "Error en el registro");
+        setLoading(false);
         return;
       }
-  
-      // Guardar token y redirigir
-      localStorage.setItem("token", data.token);
-      navigate("/dashboard");
+
+      // Registro exitoso, redirigir a login
+      alert("Registro exitoso. Por favor, inicie sesión.");
+      navigate("/login");
     } catch (err) {
-      console.error("Login error:", err);
-      setError("An error occurred during login");
+      console.error("Error en el registro:", err);
+      setError("Ocurrió un error durante el registro. Intente nuevamente.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -144,7 +166,7 @@ export default function Register() {
           id="phone"
           name="phone"
           value={formData.phone}
-          className="block mt- 1 w-full"
+          className="block mt-1 w-full"
           autoComplete="tel"
           onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
         />
@@ -250,6 +272,13 @@ export default function Register() {
         )}
       </div>
 
+      {/* Error general */}
+      {error && (
+        <div className="mt-4 text-sm text-red-600 dark:text-red-400">
+          {error}
+        </div>
+      )}
+
       <div className="flex items-center justify-end mt-4">
         <Link
           to="/login"
@@ -258,11 +287,13 @@ export default function Register() {
           Already registered?
         </Link>
 
-        <PrimaryButton type="submit">Register</PrimaryButton>
+        <PrimaryButton type="submit" disabled={loading}>
+          {loading ? "Registrando..." : "Register"}
+        </PrimaryButton>
 
         <Link
           to="/chambero-register"
-          className="text-center rounded-md px-3 py-2 text-black ring-1 ring-transparent transition hover:text-black/70 focus:outline-none focus-visible:ring-[#FF2D20] dark:text-white dark:hover:text-white/80 dark:focus-visible:ring-white"
+          className="ml-3 text-center rounded-md px-3 py-2 text-black ring-1 ring-transparent transition hover:text-black/70 focus:outline-none focus-visible:ring-[#FF2D20] dark:text-white dark:hover:text-white/80 dark:focus-visible:ring-white"
         >
           Register as Chambero
         </Link>

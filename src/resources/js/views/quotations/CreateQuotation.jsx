@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
+import axios from "../../config/axios";
 import { AuthContext } from "../../../../context/AuthContext";
 
 const CreateQuotation = () => {
   const { chamberoId } = useParams();
-  const { user } = AuthContext();
+  const { user } = useContext(AuthContext);
   const navigate = useNavigate();
   const [chambero, setChambero] = useState(null);
   const [formData, setFormData] = useState({
@@ -14,6 +14,7 @@ const CreateQuotation = () => {
     price: "",
   });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchChamberoData = async () => {
@@ -23,12 +24,19 @@ const CreateQuotation = () => {
         setLoading(false);
       } catch (error) {
         console.error("Error fetching chambero data:", error);
+        setError("Error al cargar los datos del chambero");
         setLoading(false);
       }
     };
 
+    if (!user) {
+      setError("Debe iniciar sesión para crear una cotización");
+      setLoading(false);
+      return;
+    }
+
     fetchChamberoData();
-  }, [chamberoId]);
+  }, [chamberoId, user]);
 
   const handleChange = (e) => {
     if (e.target.name === "price") {
@@ -45,29 +53,53 @@ const CreateQuotation = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(null);
+
+    if (!user || !user._id) {
+      setError("Debe iniciar sesión para crear una cotización");
+      return;
+    }
 
     try {
       const price = formData.price.replace(/,/g, "");
 
-      await axios.post("/api/quotations", {
-        client_id: user.id,
+      const quotationData = {
+        client_id: user._id,
         chambero_id: chamberoId,
         service_description: formData.service_description,
         scheduled_date: formData.scheduled_date,
-        price: price,
-      });
+        price: parseInt(price),
+        status: "pending",
+      };
 
-      navigate("/dashboard");
+      console.log("Sending quotation data:", quotationData);
+
+      const response = await axios.post("/api/quotations", quotationData);
+
+      if (response.data) {
+        navigate("/quotations");
+      }
     } catch (error) {
       console.error("Error creating quotation:", error);
-      alert("Error al crear la cotización. Intente nuevamente.");
+      setError(
+        error.response?.data?.message ||
+          "Error al crear la cotización. Verifique que todos los campos estén completos."
+      );
     }
   };
 
   if (loading) {
     return (
       <div className="container mx-auto flex justify-center p-6">
-        Cargando...
+        <div className="text-gray-600 dark:text-gray-400">Cargando...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto flex justify-center p-6">
+        <div className="text-red-600 dark:text-red-400">{error}</div>
       </div>
     );
   }
@@ -75,24 +107,31 @@ const CreateQuotation = () => {
   if (!chambero) {
     return (
       <div className="container mx-auto flex justify-center p-6">
-        Chambero no encontrado
+        <div className="text-gray-600 dark:text-gray-400">
+          Chambero no encontrado
+        </div>
       </div>
     );
   }
 
-  const today = new Date().toISOString().split("T")[0]; // Formato YYYY-MM-DD para el atributo min
+  const today = new Date().toISOString().split("T")[0];
 
   return (
-    <div className="container mx-auto flex justify-center">
-      <div className="w-full max-w-md bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
+    <div className="container mx-auto p-4 md:p-6">
+      <div className="max-w-2xl mx-auto bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
         <div className="flex items-center gap-4 mb-6">
           <img
             src={
-              chambero.profile_photo ||
-              "/storage/profile-photos/DefaultImage.jpeg"
+              chambero.profile_photo
+                ? `http://localhost:5000/${chambero.profile_photo}`
+                : "/storage/profile-photos/DefaultImage.jpeg"
             }
             alt="Profile Photo"
             className="w-16 h-16 rounded-full object-cover"
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = "/storage/profile-photos/DefaultImage.jpeg";
+            }}
           />
           <div>
             <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">
@@ -166,7 +205,7 @@ const CreateQuotation = () => {
               htmlFor="price"
               className="block text-gray-700 dark:text-gray-300 font-medium mb-2"
             >
-              Dinero ofrecido en ₡ :
+              Dinero ofrecido en ₡:
             </label>
             <input
               type="text"
@@ -179,6 +218,13 @@ const CreateQuotation = () => {
               required
             />
           </div>
+
+          {/* Error Message */}
+          {error && (
+            <div className="mb-4 text-red-600 dark:text-red-400 text-sm">
+              {error}
+            </div>
+          )}
 
           {/* Buttons */}
           <div className="flex justify-between">
@@ -193,7 +239,7 @@ const CreateQuotation = () => {
               className="w-5/12 bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700"
               onClick={() => navigate("/dashboard")}
             >
-              Cancelar Cotización
+              Cancelar
             </button>
           </div>
         </form>

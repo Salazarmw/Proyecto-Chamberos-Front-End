@@ -1,68 +1,81 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import axios from "../../config/axios";
 import { AuthContext } from "../../../../context/AuthContext";
 
 const Quotations = () => {
   const [quotations, setQuotations] = useState([]);
   const [filters, setFilters] = useState([]);
-  const { user } = AuthContext();
+  const { user } = useContext(AuthContext);
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchQuotations();
-  }, [filters]);
+    if (user && user._id) {
+      fetchQuotations();
+    }
+  }, [filters, user]);
 
   const fetchQuotations = async () => {
     try {
+      setLoading(true);
       let url = "/api/quotations";
       if (filters.length > 0) {
         url += `?filter=${filters.join(",")}`;
       }
       const response = await axios.get(url);
-      setQuotations(response.data);
+      console.log("Quotations response:", response.data); // Para depuración
+
+      const filteredQuotations = response.data.filter((quotation) => {
+        if (user.user_type === "client") {
+          return quotation.client_id._id === user._id;
+        } else if (user.user_type === "chambero") {
+          return quotation.chambero_id._id === user._id;
+        }
+        return false;
+      });
+
+      console.log("Filtered quotations:", filteredQuotations); // Para depuración
+      setQuotations(filteredQuotations);
+      setError(null);
     } catch (error) {
       console.error("Error fetching quotations:", error);
+      setError("Error al cargar las cotizaciones");
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleFilterChange = (e) => {
     const value = e.target.value;
     if (e.target.checked) {
-      setFilters([...filters, value]);
+      setFilters((prev) => [...prev, value]);
     } else {
-      setFilters(filters.filter((filter) => filter !== value));
+      setFilters((prev) => prev.filter((filter) => filter !== value));
     }
   };
 
   const handleAction = async (action, quotationId) => {
-    if (action === "counteroffer") {
-      navigate(`/quotations/${quotationId}/counteroffer`);
-      return;
-    }
-
     try {
-      const response = await axios.post(
-        `/api/quotations/${quotationId}/${action}`,
-        {},
+      if (action === "counteroffer") {
+        navigate(`/quotations/${quotationId}/counteroffer`);
+        return;
+      }
+
+      const response = await axios.put(
+        `/api/quotations/${quotationId}/status`,
         {
-          headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-TOKEN": document
-              .querySelector('meta[name="csrf-token"]')
-              .getAttribute("content"),
-          },
+          status: action,
         }
       );
 
-      if (response.status === 200) {
-        fetchQuotations();
-      } else {
-        alert("Ocurrió un error. Intente nuevamente.");
+      if (response.status === 200 || response.status === 201) {
+        await fetchQuotations();
       }
     } catch (error) {
-      console.error(error);
-      alert("Error de red. Verifique su conexión.");
+      console.error("Error handling action:", error);
+      alert("Error al procesar la acción. Por favor, intente nuevamente.");
     }
   };
 
@@ -76,23 +89,72 @@ const Quotations = () => {
     );
   };
 
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString("es-CR");
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "pending":
+        return "text-yellow-600 dark:text-yellow-400";
+      case "accepted":
+        return "text-green-600 dark:text-green-400";
+      case "rejected":
+        return "text-red-600 dark:text-red-400";
+      case "offer":
+        return "text-blue-600 dark:text-blue-400";
+      default:
+        return "text-gray-600 dark:text-gray-400";
+    }
+  };
+
+  const getStatusText = (status) => {
+    switch (status) {
+      case "pending":
+        return "Pendiente";
+      case "accepted":
+        return "Aceptada";
+      case "rejected":
+        return "Rechazada";
+      case "offer":
+        return "Contraoferta";
+      default:
+        return status;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="container mx-auto p-4 text-center">
+        <div className="text-gray-600 dark:text-gray-400">Cargando...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto p-4 text-center">
+        <div className="text-red-600 dark:text-red-400">{error}</div>
+      </div>
+    );
+  }
+
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-auto p-4 md:p-6">
       <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4">
         Cotizaciones
       </h1>
-      <div className="flex gap-6">
+      <div className="flex flex-col lg:flex-row gap-4 md:gap-6">
         {/* Filters container */}
-        <div className="w-1/4 bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        <div className="w-full lg:w-1/4 bg-white dark:bg-gray-800 shadow rounded-lg p-4 md:p-6">
           <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
             Filtrar Cotizaciones
           </h2>
-          <form id="filters-form">
-            <div className="mb-4">
+          <form className="space-y-3">
+            <div className="flex items-center">
               <input
                 type="checkbox"
                 id="filter1"
-                name="filter[]"
                 value="pending"
                 className="form-checkbox h-5 w-5 text-indigo-600 dark:text-indigo-400"
                 checked={filters.includes("pending")}
@@ -105,11 +167,10 @@ const Quotations = () => {
                 Pendientes
               </label>
             </div>
-            <div className="mb-4">
+            <div className="flex items-center">
               <input
                 type="checkbox"
                 id="filter4"
-                name="filter[]"
                 value="offer"
                 className="form-checkbox h-5 w-5 text-indigo-600 dark:text-indigo-400"
                 checked={filters.includes("offer")}
@@ -122,11 +183,10 @@ const Quotations = () => {
                 Contraofertas
               </label>
             </div>
-            <div className="mb-4">
+            <div className="flex items-center">
               <input
                 type="checkbox"
                 id="filter2"
-                name="filter[]"
                 value="accepted"
                 className="form-checkbox h-5 w-5 text-indigo-600 dark:text-indigo-400"
                 checked={filters.includes("accepted")}
@@ -139,11 +199,10 @@ const Quotations = () => {
                 Aceptadas
               </label>
             </div>
-            <div className="mb-4">
+            <div className="flex items-center">
               <input
                 type="checkbox"
                 id="filter3"
-                name="filter[]"
                 value="rejected"
                 className="form-checkbox h-5 w-5 text-indigo-600 dark:text-indigo-400"
                 checked={filters.includes("rejected")}
@@ -156,88 +215,77 @@ const Quotations = () => {
                 Rechazadas
               </label>
             </div>
-            <button
-              type="button"
-              className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded"
-              onClick={fetchQuotations}
-            >
-              Aplicar Filtros
-            </button>
           </form>
         </div>
 
         {/* Quotations table */}
-        <div className="w-3/4 bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-          <table className="table-auto w-full border-collapse border border-gray-300 dark:border-gray-700">
+        <div className="w-full lg:w-3/4 bg-white dark:bg-gray-800 shadow rounded-lg p-4 md:p-6 overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-300 dark:divide-gray-700">
             <thead>
-              <tr className="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
-                <th className="border border-gray-300 dark:border-gray-700 px-4 py-2">
-                  ID
-                </th>
-                <th className="border border-gray-300 dark:border-gray-700 px-4 py-2">
+              <tr className="bg-gray-100 dark:bg-gray-700">
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-200">
                   Descripción
                 </th>
-                <th className="border border-gray-300 dark:border-gray-700 px-4 py-2">
-                  Fecha Programada
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-200">
+                  Fecha
                 </th>
-                <th className="border border-gray-300 dark:border-gray-700 px-4 py-2">
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-200">
                   Precio
                 </th>
-                <th className="border border-gray-300 dark:border-gray-700 px-4 py-2">
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-200">
                   Estado
                 </th>
-                <th className="border border-gray-300 dark:border-gray-700 px-4 py-2">
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-200">
                   Acciones
                 </th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {quotations.length > 0 ? (
                 quotations.map((quotation) => (
                   <tr
-                    key={quotation.id}
-                    className="border-b border-gray-300 dark:border-gray-700 hover:bg-blue-100 dark:hover:bg-blue-600"
+                    key={quotation._id}
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700"
                   >
-                    <td className="border border-gray-300 dark:border-gray-700 px-4 py-2 text-gray-800 dark:text-gray-200">
-                      {quotation.id}
-                    </td>
-                    <td className="border border-gray-300 dark:border-gray-700 px-4 py-2 text-gray-800 dark:text-gray-200">
+                    <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-200">
                       {quotation.service_description}
                     </td>
-                    <td className="border border-gray-300 dark:border-gray-700 px-4 py-2 text-gray-800 dark:text-gray-200">
-                      {quotation.scheduled_date}
+                    <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-200">
+                      {formatDate(quotation.scheduled_date)}
                     </td>
-                    <td className="border border-gray-300 dark:border-gray-700 px-4 py-2 text-gray-800 dark:text-gray-200">
+                    <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-200">
                       {formatMoney(quotation.price)}
                     </td>
-                    <td className="border border-gray-300 dark:border-gray-700 px-4 py-2 text-gray-800 dark:text-gray-200 capitalize">
-                      {quotation.status}
+                    <td className="px-4 py-3 text-sm font-medium capitalize">
+                      <span className={getStatusColor(quotation.status)}>
+                        {getStatusText(quotation.status)}
+                      </span>
                     </td>
-                    <td className="border border-gray-300 dark:border-gray-700 px-4 py-2">
+                    <td className="px-4 py-3">
                       {user.user_type === "chambero" &&
                         quotation.status === "pending" && (
-                          <div className="flex gap-2">
+                          <div className="flex flex-wrap gap-2">
                             <button
                               onClick={() =>
-                                handleAction("accept", quotation.id)
+                                handleAction("accepted", quotation._id)
                               }
-                              className="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded"
+                              className="bg-green-500 hover:bg-green-600 text-white text-sm px-3 py-1 rounded"
                             >
                               Aceptar
                             </button>
                             <button
                               onClick={() =>
-                                handleAction("reject", quotation.id)
+                                handleAction("rejected", quotation._id)
                               }
-                              className="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded"
+                              className="bg-red-500 hover:bg-red-600 text-white text-sm px-3 py-1 rounded"
                             >
                               Rechazar
                             </button>
                             <button
                               onClick={() =>
-                                handleAction("counteroffer", quotation.id)
+                                handleAction("counteroffer", quotation._id)
                               }
-                              className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-3 rounded"
+                              className="bg-yellow-500 hover:bg-yellow-600 text-white text-sm px-3 py-1 rounded"
                             >
                               Contra Oferta
                             </button>
@@ -245,20 +293,20 @@ const Quotations = () => {
                         )}
                       {user.user_type === "client" &&
                         quotation.status === "offer" && (
-                          <div className="flex gap-2">
+                          <div className="flex flex-wrap gap-2">
                             <button
                               onClick={() =>
-                                handleAction("accept", quotation.id)
+                                handleAction("accepted", quotation._id)
                               }
-                              className="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded"
+                              className="bg-green-500 hover:bg-green-600 text-white text-sm px-3 py-1 rounded"
                             >
                               Aceptar
                             </button>
                             <button
                               onClick={() =>
-                                handleAction("reject", quotation.id)
+                                handleAction("rejected", quotation._id)
                               }
-                              className="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded"
+                              className="bg-red-500 hover:bg-red-600 text-white text-sm px-3 py-1 rounded"
                             >
                               Rechazar
                             </button>
@@ -270,8 +318,8 @@ const Quotations = () => {
               ) : (
                 <tr>
                   <td
-                    colSpan="6"
-                    className="text-center py-4 text-gray-600 dark:text-gray-400"
+                    colSpan="5"
+                    className="px-4 py-3 text-center text-gray-600 dark:text-gray-400"
                   >
                     No hay cotizaciones disponibles
                   </td>

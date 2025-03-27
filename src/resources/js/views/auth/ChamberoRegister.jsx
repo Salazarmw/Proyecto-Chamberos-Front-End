@@ -5,7 +5,11 @@ import TextInput from "../components/TextInput";
 import InputError from "../components/InputError";
 import DropdownRegister from "../components/DropdownRegister";
 import DateInput from "../components/DateInput";
-import { fetchProvinces, fetchCantons } from "../../../../services/locationService";
+import axios from "../../config/axios";
+import {
+  fetchProvinces,
+  fetchCantons,
+} from "../../../../services/locationService";
 
 export default function ChamberoRegister() {
   const navigate = useNavigate();
@@ -20,86 +24,152 @@ export default function ChamberoRegister() {
     birth_date: new Date().toISOString().split("T")[0],
     password: "",
     password_confirmation: "",
+    tags: [],
   });
 
   const [cantons, setCantons] = useState([]);
   const [provinces, setProvinces] = useState([]);
+  const [availableTags, setAvailableTags] = useState([]);
   const [errors, setErrors] = useState({});
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [loadingInitial, setLoadingInitial] = useState(true);
 
   useEffect(() => {
-    const loadProvinces = async () => {
+    const loadInitialData = async () => {
+      setLoadingInitial(true);
       try {
-        const response = await fetch("http://localhost:5000/api/provinces");
-        if (!response.ok) throw new Error("Failed to fetch provinces");
-        const provincesData = await response.json();
-        console.log("Provinces:", provincesData); // Log para depurar
+        const provincesResponse = await axios.get("/api/provinces");
         setProvinces(
-          provincesData.map((province) => ({
-            value: province._id, // Usar el ID como valor
-            label: province.name, // Usar el nombre como etiqueta
+          provincesResponse.data.map((province) => ({
+            value: province._id,
+            label: province.name,
           }))
         );
+
+        const tagsResponse = await axios.get("/api/tags");
+        console.log("Tags response:", tagsResponse.data);
+        const tagsData = tagsResponse.data.tags || tagsResponse.data;
+        setAvailableTags(tagsData);
       } catch (error) {
-        console.error("Error loading provinces:", error);
+        console.error("Error loading initial data:", error);
+        setError(
+          "Error al cargar los datos iniciales. Por favor, recargue la página."
+        );
+      } finally {
+        setLoadingInitial(false);
       }
     };
 
-    loadProvinces();
+    loadInitialData();
   }, []);
 
   const handleProvinceChange = async (e) => {
-    const provinceId = e.target.value; // Este será el ID de la provincia
+    const provinceId = e.target.value;
     setFormData({
       ...formData,
       province: provinceId,
-      canton: "", // Resetear el cantón seleccionado
+      canton: "",
     });
 
     if (provinceId) {
       try {
-        const cantonsData = await fetchCantons(provinceId);
-        console.log("Cantons fetched:", cantonsData); // Log para depurar
-        setCantons(cantonsData);
+        const response = await axios.get(`/api/cantons/province/${provinceId}`);
+        setCantons(
+          response.data.map((canton) => ({
+            value: canton._id,
+            label: canton.name,
+          }))
+        );
       } catch (error) {
         console.error("Error fetching cantons:", error);
+        setError("Error al cargar los cantones.");
       }
     } else {
-      setCantons([]); // Limpiar los cantones si no hay provincia seleccionada
+      setCantons([]);
     }
+  };
+
+  const handleTagChange = (tagId) => {
+    setFormData((prev) => {
+      if (prev.tags.includes(tagId)) {
+        return {
+          ...prev,
+          tags: prev.tags.filter((id) => id !== tagId),
+        };
+      }
+      return {
+        ...prev,
+        tags: [...prev.tags, tagId],
+      };
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const userType = "chambero"; // Define el tipo de usuario
+    setLoading(true);
+    setError(null);
+    setErrors({});
+
+    if (formData.password !== formData.password_confirmation) {
+      setErrors({ password_confirmation: "Las contraseñas no coinciden" });
+      setLoading(false);
+      return;
+    }
+
+    if (formData.tags.length === 0) {
+      setErrors({
+        tags: "Debe seleccionar al menos una categoría de servicio",
+      });
+      setLoading(false);
+      return;
+    }
 
     try {
-      const response = await fetch("http://localhost:5000/api/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ ...formData, user_type: userType }),
-      });
+      const userData = {
+        ...formData,
+        user_type: "chambero",
+      };
 
-      const data = await response.json();
+      console.log("Registrando chambero:", userData);
 
-      if (!response.ok) {
-        setErrors(data.errors || {});
-        throw new Error(data.message || "Registration failed");
-      }
+      const response = await axios.post("/api/auth/register", userData);
+      console.log("Respuesta del registro:", response.data);
 
-      // Redirect to login after successful registration
+      alert("Registro exitoso. Por favor, inicie sesión.");
       navigate("/login");
     } catch (error) {
-      console.error("Registration error:", error);
+      console.error("Error en el registro:", error);
+
+      if (error.response) {
+        console.log("Error response:", error.response);
+
+        if (error.response.data) {
+          if (error.response.data.errors) {
+            setErrors(error.response.data.errors);
+          } else {
+            setError(error.response.data.message || "Error en el registro");
+          }
+        } else {
+          setError(
+            `Error ${error.response.status}: ${error.response.statusText}`
+          );
+        }
+      } else if (error.request) {
+        setError("No se recibió respuesta del servidor. Verifica tu conexión.");
+      } else {
+        setError("Ocurrió un error durante el registro. Intente nuevamente.");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} className="max-w-xl mx-auto">
       {/* Name */}
       <div>
-        <InputLabel htmlFor="name" value="Name" />
+        <InputLabel htmlFor="name" value="Nombre" />
         <TextInput
           id="name"
           name="name"
@@ -114,7 +184,7 @@ export default function ChamberoRegister() {
 
       {/* Last Name */}
       <div className="mt-4">
-        <InputLabel htmlFor="lastname" value="Last Name" />
+        <InputLabel htmlFor="lastname" value="Apellido" />
         <TextInput
           id="lastname"
           name="lastname"
@@ -132,7 +202,7 @@ export default function ChamberoRegister() {
 
       {/* Email */}
       <div className="mt-4">
-        <InputLabel htmlFor="email" value="Email" />
+        <InputLabel htmlFor="email" value="Correo electrónico" />
         <TextInput
           id="email"
           type="email"
@@ -147,7 +217,7 @@ export default function ChamberoRegister() {
 
       {/* Phone */}
       <div className="mt-4">
-        <InputLabel htmlFor="phone" value="Phone" />
+        <InputLabel htmlFor="phone" value="Teléfono" />
         <TextInput
           id="phone"
           name="phone"
@@ -161,7 +231,7 @@ export default function ChamberoRegister() {
 
       {/* Province */}
       <div className="mt-4">
-        <InputLabel htmlFor="province" value="Province" />
+        <InputLabel htmlFor="province" value="Provincia" />
         <DropdownRegister
           id="province"
           name="province"
@@ -176,7 +246,7 @@ export default function ChamberoRegister() {
 
       {/* Canton */}
       <div className="mt-4">
-        <InputLabel htmlFor="canton" value="Canton" />
+        <InputLabel htmlFor="canton" value="Cantón" />
         <DropdownRegister
           id="canton"
           name="canton"
@@ -191,7 +261,7 @@ export default function ChamberoRegister() {
 
       {/* Address */}
       <div className="mt-4">
-        <InputLabel htmlFor="address" value="Address" />
+        <InputLabel htmlFor="address" value="Dirección" />
         <TextInput
           id="address"
           name="address"
@@ -206,9 +276,40 @@ export default function ChamberoRegister() {
         )}
       </div>
 
+      {/* Tags/Categorías */}
+      <div className="mt-4">
+        <InputLabel htmlFor="tags" value="Servicios ofrecidos" />
+        <div className="mt-2 grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 border border-gray-300 dark:border-gray-700 rounded-md">
+          {loadingInitial ? (
+            <p className="text-gray-500 italic col-span-2">
+              Cargando categorías...
+            </p>
+          ) : availableTags && availableTags.length > 0 ? (
+            availableTags.map((tag) => (
+              <label key={tag._id} className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={formData.tags.includes(tag._id)}
+                  onChange={() => handleTagChange(tag._id)}
+                  className="form-checkbox h-5 w-5 text-indigo-600 dark:text-indigo-400"
+                />
+                <span className="text-gray-700 dark:text-gray-300">
+                  {tag.name}
+                </span>
+              </label>
+            ))
+          ) : (
+            <p className="text-gray-500 italic col-span-2">
+              No hay categorías disponibles
+            </p>
+          )}
+        </div>
+        {errors.tags && <InputError message={errors.tags} className="mt-2" />}
+      </div>
+
       {/* Birth Date */}
       <div className="mt-4">
-        <InputLabel htmlFor="birth_date" value="Birth Date" />
+        <InputLabel htmlFor="birth_date" value="Fecha de nacimiento" />
         <DateInput
           id="birth_date"
           name="birth_date"
@@ -224,7 +325,7 @@ export default function ChamberoRegister() {
 
       {/* Password */}
       <div className="mt-4">
-        <InputLabel htmlFor="password" value="Password" />
+        <InputLabel htmlFor="password" value="Contraseña" />
         <TextInput
           id="password"
           type="password"
@@ -242,7 +343,10 @@ export default function ChamberoRegister() {
 
       {/* Password Confirmation */}
       <div className="mt-4">
-        <InputLabel htmlFor="password_confirmation" value="Confirm Password" />
+        <InputLabel
+          htmlFor="password_confirmation"
+          value="Confirmar contraseña"
+        />
         <TextInput
           id="password_confirmation"
           type="password"
@@ -258,20 +362,28 @@ export default function ChamberoRegister() {
         )}
       </div>
 
+      {/* Error general */}
+      {error && (
+        <div className="mt-4 p-2 bg-red-50 dark:bg-red-900/20 text-sm text-red-600 dark:text-red-400 rounded border border-red-200 dark:border-red-800">
+          {error}
+        </div>
+      )}
+
       {/* Submit Button */}
       <div className="flex items-center justify-end mt-4">
         <Link
           to="/login"
           className="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800"
         >
-          Already registered?
+          ¿Ya estás registrado?
         </Link>
 
         <button
           type="submit"
-          className="inline-flex items-center px-4 py-2 bg-gray-800 dark:bg-gray-200 border border-transparent rounded-md font-semibold text-xs text-white dark:text-gray-800 uppercase tracking-widest hover:bg-gray-700 dark:hover:bg-white focus:bg-gray-700 dark:focus:bg-white active:bg-gray-900 dark:active:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150 ml-4"
+          disabled={loading}
+          className="ml-4 inline-flex items-center px-4 py-2 bg-gray-800 dark:bg-gray-200 border border-transparent rounded-md font-semibold text-xs text-white dark:text-gray-800 uppercase tracking-widest hover:bg-gray-700 dark:hover:bg-white focus:bg-gray-700 dark:focus:bg-white active:bg-gray-900 dark:active:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150"
         >
-          Register
+          {loading ? "Registrando..." : "Registrarse"}
         </button>
       </div>
     </form>
