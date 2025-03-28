@@ -5,43 +5,34 @@ import { AuthContext } from "../../../../context/AuthContext";
 
 const Quotations = () => {
   const [quotations, setQuotations] = useState([]);
-  const [filters, setFilters] = useState([]);
+  const [selectedStatuses, setSelectedStatuses] = useState([]);
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (user && user._id) {
+    if (user) {
       fetchQuotations();
     }
-  }, [filters, user]);
+  }, [user, selectedStatuses]);
 
   const fetchQuotations = async () => {
     try {
       setLoading(true);
-      let url = "/api/quotations";
-      if (filters.length > 0) {
-        url += `?filter=${filters.join(",")}`;
+      const queryParams = new URLSearchParams();
+      if (selectedStatuses.length > 0) {
+        selectedStatuses.forEach(status => {
+          queryParams.append('status[]', status);
+        });
       }
+
+      const url = `/api/quotations?${queryParams.toString()}`;
       const response = await axios.get(url);
-      console.log("Quotations response:", response.data); // Para depuración
-
-      const filteredQuotations = response.data.filter((quotation) => {
-        if (user.user_type === "client") {
-          return quotation.client_id._id === user._id;
-        } else if (user.user_type === "chambero") {
-          return quotation.chambero_id._id === user._id;
-        }
-        return false;
-      });
-
-      console.log("Filtered quotations:", filteredQuotations); // Para depuración
-      setQuotations(filteredQuotations);
-      setError(null);
+      setQuotations(response.data);
     } catch (error) {
       console.error("Error fetching quotations:", error);
-      setError("Error al cargar las cotizaciones");
+      setError(error.response?.data?.message || "Error loading quotations");
     } finally {
       setLoading(false);
     }
@@ -50,9 +41,9 @@ const Quotations = () => {
   const handleFilterChange = (e) => {
     const value = e.target.value;
     if (e.target.checked) {
-      setFilters((prev) => [...prev, value]);
+      setSelectedStatuses((prev) => [...prev, value]);
     } else {
-      setFilters((prev) => prev.filter((filter) => filter !== value));
+      setSelectedStatuses((prev) => prev.filter((status) => status !== value));
     }
   };
 
@@ -75,7 +66,7 @@ const Quotations = () => {
       }
     } catch (error) {
       console.error("Error handling action:", error);
-      alert("Error al procesar la acción. Por favor, intente nuevamente.");
+      setError(error.response?.data?.message || "Error al procesar la acción. Por favor, intente nuevamente.");
     }
   };
 
@@ -118,6 +109,8 @@ const Quotations = () => {
         return "Rechazada";
       case "offer":
         return "Contraoferta";
+      case "counteroffer":
+        return "Contraoferta";
       default:
         return status;
     }
@@ -126,7 +119,7 @@ const Quotations = () => {
   if (loading) {
     return (
       <div className="container mx-auto p-4 text-center">
-        <div className="text-gray-600 dark:text-gray-400">Cargando...</div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mx-auto"></div>
       </div>
     );
   }
@@ -134,7 +127,9 @@ const Quotations = () => {
   if (error) {
     return (
       <div className="container mx-auto p-4 text-center">
-        <div className="text-red-600 dark:text-red-400">{error}</div>
+        <div className="bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded-lg">
+          {error}
+        </div>
       </div>
     );
   }
@@ -157,7 +152,7 @@ const Quotations = () => {
                 id="filter1"
                 value="pending"
                 className="form-checkbox h-5 w-5 text-indigo-600 dark:text-indigo-400"
-                checked={filters.includes("pending")}
+                checked={selectedStatuses.includes("pending")}
                 onChange={handleFilterChange}
               />
               <label
@@ -171,9 +166,9 @@ const Quotations = () => {
               <input
                 type="checkbox"
                 id="filter4"
-                value="offer"
+                value="counteroffer"
                 className="form-checkbox h-5 w-5 text-indigo-600 dark:text-indigo-400"
-                checked={filters.includes("offer")}
+                checked={selectedStatuses.includes("counteroffer")}
                 onChange={handleFilterChange}
               />
               <label
@@ -189,7 +184,7 @@ const Quotations = () => {
                 id="filter2"
                 value="accepted"
                 className="form-checkbox h-5 w-5 text-indigo-600 dark:text-indigo-400"
-                checked={filters.includes("accepted")}
+                checked={selectedStatuses.includes("accepted")}
                 onChange={handleFilterChange}
               />
               <label
@@ -205,7 +200,7 @@ const Quotations = () => {
                 id="filter3"
                 value="rejected"
                 className="form-checkbox h-5 w-5 text-indigo-600 dark:text-indigo-400"
-                checked={filters.includes("rejected")}
+                checked={selectedStatuses.includes("rejected")}
                 onChange={handleFilterChange}
               />
               <label
@@ -262,56 +257,47 @@ const Quotations = () => {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      {user.user_type === "chambero" &&
-                        quotation.status === "pending" && (
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              onClick={() =>
-                                handleAction("accepted", quotation._id)
-                              }
-                              className="bg-green-500 hover:bg-green-600 text-white text-sm px-3 py-1 rounded"
-                            >
-                              Aceptar
-                            </button>
-                            <button
-                              onClick={() =>
-                                handleAction("rejected", quotation._id)
-                              }
-                              className="bg-red-500 hover:bg-red-600 text-white text-sm px-3 py-1 rounded"
-                            >
-                              Rechazar
-                            </button>
-                            <button
-                              onClick={() =>
-                                handleAction("counteroffer", quotation._id)
-                              }
-                              className="bg-yellow-500 hover:bg-yellow-600 text-white text-sm px-3 py-1 rounded"
-                            >
-                              Contra Oferta
-                            </button>
-                          </div>
-                        )}
-                      {user.user_type === "client" &&
-                        quotation.status === "offer" && (
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              onClick={() =>
-                                handleAction("accepted", quotation._id)
-                              }
-                              className="bg-green-500 hover:bg-green-600 text-white text-sm px-3 py-1 rounded"
-                            >
-                              Aceptar
-                            </button>
-                            <button
-                              onClick={() =>
-                                handleAction("rejected", quotation._id)
-                              }
-                              className="bg-red-500 hover:bg-red-600 text-white text-sm px-3 py-1 rounded"
-                            >
-                              Rechazar
-                            </button>
-                          </div>
-                        )}
+                      {/* Botones para el chambero */}
+                      {user.user_type === "chambero" && quotation.status === "pending" && (
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            onClick={() => handleAction("accepted", quotation._id)}
+                            className="bg-green-500 hover:bg-green-600 text-white text-sm px-3 py-1 rounded"
+                          >
+                            Aceptar
+                          </button>
+                          <button
+                            onClick={() => handleAction("rejected", quotation._id)}
+                            className="bg-red-500 hover:bg-red-600 text-white text-sm px-3 py-1 rounded"
+                          >
+                            Rechazar
+                          </button>
+                          <button
+                            onClick={() => handleAction("counteroffer", quotation._id)}
+                            className="bg-yellow-500 hover:bg-yellow-600 text-white text-sm px-3 py-1 rounded"
+                          >
+                            Contra Oferta
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Botones para el cliente */}
+                      {user.user_type === "client" && quotation.status === "counteroffer" && (
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            onClick={() => handleAction("accepted", quotation._id)}
+                            className="bg-green-500 hover:bg-green-600 text-white text-sm px-3 py-1 rounded"
+                          >
+                            Aceptar
+                          </button>
+                          <button
+                            onClick={() => handleAction("rejected", quotation._id)}
+                            className="bg-red-500 hover:bg-red-600 text-white text-sm px-3 py-1 rounded"
+                          >
+                            Rechazar
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))

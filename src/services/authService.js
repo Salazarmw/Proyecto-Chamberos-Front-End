@@ -8,16 +8,16 @@ export const loginUser = async (formData) => {
       body: JSON.stringify(formData),
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || "Login failed");
+      throw new Error(data.message || "Error en el inicio de sesión");
     }
 
-    const data = await response.json();
-    localStorage.setItem("token", data.token); // Guarda el token en localStorage
+    localStorage.setItem("token", data.token);
     return data;
   } catch (error) {
     console.error("Login failed:", error);
-    return null;
+    throw error; // Propagar el error para manejarlo en el componente
   }
 };

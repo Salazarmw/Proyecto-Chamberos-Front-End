@@ -3,6 +3,7 @@ import InputLabel from "../../components/InputLabel";
 import TextInput from "../../components/TextInput";
 import InputError from "../../components/InputError";
 import PrimaryButton from "../../components/PrimaryButton";
+import axios from "../../../../../config/axios";
 
 export default function UpdatePasswordForm() {
   const [formData, setFormData] = useState({
@@ -26,16 +27,9 @@ export default function UpdatePasswordForm() {
     e.preventDefault();
 
     try {
-      const response = await fetch("/api/password", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
+      const response = await axios.put("/api/users/me/password", formData);
 
-      if (response.ok) {
+      if (response.status === 200) {
         // Reset form fields
         setFormData({
           current_password: "",
@@ -49,12 +43,14 @@ export default function UpdatePasswordForm() {
         setTimeout(() => {
           setStatus(null);
         }, 2000);
-      } else {
-        const data = await response.json();
-        setErrors(data.errors || {});
       }
     } catch (error) {
       console.error("Password update error:", error);
+      if (error.response?.data?.errors) {
+        setErrors(error.response.data.errors);
+      } else if (error.response?.data?.message) {
+        setErrors({ general: error.response.data.message });
+      }
     }
   };
 
@@ -71,6 +67,13 @@ export default function UpdatePasswordForm() {
       </header>
 
       <form className="mt-6 space-y-6" onSubmit={handleSubmit}>
+        {/* Error general */}
+        {errors.general && (
+          <div className="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg dark:bg-red-200 dark:text-red-800" role="alert">
+            {errors.general}
+          </div>
+        )}
+
         <div>
           <InputLabel htmlFor="current_password" value="Current Password" />
           <TextInput

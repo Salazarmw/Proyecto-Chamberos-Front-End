@@ -1,253 +1,249 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "../../config/axios";
+import { AuthContext } from "../../../../context/AuthContext";
 
 const Jobs = () => {
   const [jobs, setJobs] = useState([]);
-  const [filters, setFilters] = useState({
-    status: [],
-  });
-  const user = JSON.parse(localStorage.getItem("user")) || { user_type: "" };
+  const [selectedStatuses, setSelectedStatuses] = useState([]);
+  const { user } = useContext(AuthContext);
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchJobs();
-  }, [filters]);
+    if (user) {
+      fetchJobs();
+    }
+  }, [user, selectedStatuses]);
 
   const fetchJobs = async () => {
     try {
-      // Construir query params para filtros
+      setLoading(true);
       const queryParams = new URLSearchParams();
-      if (filters.status.length > 0) {
-        filters.status.forEach((status) => {
-          queryParams.append("status[]", status);
+      if (selectedStatuses.length > 0) {
+        selectedStatuses.forEach(status => {
+          queryParams.append('status[]', status);
         });
       }
 
-      const response = await fetch(`/api/jobs?${queryParams.toString()}`);
-      if (response.ok) {
-        const data = await response.json();
-        setJobs(data);
-      } else {
-        console.error("Error al cargar trabajos");
-      }
+      const url = `/api/jobs?${queryParams.toString()}`;
+      const response = await axios.get(url);
+      setJobs(response.data);
     } catch (error) {
-      console.error("Error de red:", error);
+      console.error("Error fetching jobs:", error);
+      setError(error.response?.data?.message || "Error loading jobs");
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleFilterChange = (e) => {
-    const { name, value, checked } = e.target;
-    if (name === "status[]") {
-      if (checked) {
-        setFilters((prev) => ({
-          ...prev,
-          status: [...prev.status, value],
-        }));
-      } else {
-        setFilters((prev) => ({
-          ...prev,
-          status: prev.status.filter((status) => status !== value),
-        }));
-      }
+    const value = e.target.value;
+    if (e.target.checked) {
+      setSelectedStatuses((prev) => [...prev, value]);
+    } else {
+      setSelectedStatuses((prev) => prev.filter((status) => status !== value));
     }
   };
 
-  const handleFilterSubmit = (e) => {
-    e.preventDefault();
-    fetchJobs();
+  const handleApproveJob = async (jobId) => {
+    try {
+      await axios.post(`/api/jobs/${jobId}/approve`, {
+        user_type: user.user_type
+      });
+      await fetchJobs();
+    } catch (error) {
+      console.error("Error approving job:", error);
+    }
   };
 
   const handleJobAction = async (action, jobId) => {
     try {
-      const response = await fetch(`/api/jobs/${jobId}/update`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRF-TOKEN": document
-            .querySelector('meta[name="csrf-token"]')
-            .getAttribute("content"),
-        },
-        body: JSON.stringify({
-          action,
-        }),
-      });
-
-      if (response.ok) {
-        navigate(`/reviews/create/${jobId}`);
-      } else {
-        alert("Ocurrió un error. Intente nuevamente.");
+      if (action === "approve") {
+        await handleApproveJob(jobId);
+      } else if (action === "review") {
+        navigate(`/reviews/${jobId}`);
       }
     } catch (error) {
-      console.error(error);
-      alert("Error de red. Verifique su conexión.");
+      console.error("Error handling job action:", error);
+      setError(error.response?.data?.message || "Error al procesar la acción");
     }
   };
 
   const formatStatus = (status) => {
-    return status.charAt(0).toUpperCase() + status.slice(1).replace("_", " ");
+    switch (status) {
+      case "in_progress":
+        return "En progreso";
+      case "completed":
+        return "Completado";
+      case "failed":
+        return "Fallido";
+      default:
+        return status;
+    }
   };
 
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "in_progress":
+        return "text-yellow-600 dark:text-yellow-400";
+      case "completed":
+        return "text-green-600 dark:text-green-400";
+      case "failed":
+        return "text-red-600 dark:text-red-400";
+      default:
+        return "text-gray-600 dark:text-gray-400";
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="container mx-auto p-4 text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mx-auto"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto p-4 text-center">
+        <div className="bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded-lg">
+          {error}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="container mx-auto p-6">
-      <meta name="csrf-token" content="" />{" "}
+    <div className="container mx-auto p-4 md:p-6">
       <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4">
         Trabajos
       </h1>
-      <div className="flex gap-6">
-        {/* Filters */}
-        <div className="w-1/4 bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+      <div className="flex flex-col lg:flex-row gap-4 md:gap-6">
+        {/* Filters container */}
+        <div className="w-full lg:w-1/4 bg-white dark:bg-gray-800 shadow rounded-lg p-4 md:p-6">
           <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
-            Filtrar trabajos
+            Filtrar Trabajos
           </h2>
-          <form onSubmit={handleFilterSubmit} className="space-y-4">
-            <div className="flex items-center space-x-2">
+          <form className="space-y-3">
+            <div className="flex items-center">
               <input
                 type="checkbox"
-                name="status[]"
-                value="failed"
-                checked={filters.status.includes("failed")}
-                onChange={handleFilterChange}
-                className="form-checkbox h-5 w-5 text-red-600 dark:text-red-400"
-              />
-              <span className="text-gray-700 dark:text-gray-300">Failed</span>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                name="status[]"
+                id="filter1"
                 value="in_progress"
-                checked={filters.status.includes("in_progress")}
+                className="form-checkbox h-5 w-5 text-indigo-600 dark:text-indigo-400"
+                checked={selectedStatuses.includes("in_progress")}
                 onChange={handleFilterChange}
-                className="form-checkbox h-5 w-5 text-yellow-600 dark:text-yellow-400"
               />
-              <span className="text-gray-700 dark:text-gray-300">
-                In Progress
-              </span>
+              <label
+                htmlFor="filter1"
+                className="ml-2 text-gray-700 dark:text-gray-300"
+              >
+                En Progreso
+              </label>
             </div>
-
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center">
               <input
                 type="checkbox"
-                name="status[]"
+                id="filter2"
                 value="completed"
-                checked={filters.status.includes("completed")}
+                className="form-checkbox h-5 w-5 text-indigo-600 dark:text-indigo-400"
+                checked={selectedStatuses.includes("completed")}
                 onChange={handleFilterChange}
-                className="form-checkbox h-5 w-5 text-green-600 dark:text-green-400"
               />
-              <span className="text-gray-700 dark:text-gray-300">
-                Completed
-              </span>
+              <label
+                htmlFor="filter2"
+                className="ml-2 text-gray-700 dark:text-gray-300"
+              >
+                Completados
+              </label>
             </div>
-
-            <button
-              type="submit"
-              className="mt-4 w-full bg-indigo-600 text-white py-2 rounded-md shadow-lg hover:bg-indigo-700 focus:outline-none"
-            >
-              Filtrar
-            </button>
           </form>
         </div>
 
-        {/* Jobs table */}
-        <div className="w-3/4 bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-          <table className="table-auto w-full border-collapse border border-gray-300 dark:border-gray-700">
-            <thead>
-              <tr className="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
-                <th className="border border-gray-300 dark:border-gray-700 px-4 py-2">
-                  Trabajo ID
-                </th>
-                <th className="border border-gray-300 dark:border-gray-700 px-4 py-2">
-                  Descripción
-                </th>
-                <th className="border border-gray-300 dark:border-gray-700 px-4 py-2">
-                  Estado
-                </th>
-                <th className="border border-gray-300 dark:border-gray-700 px-4 py-2">
-                  Acciones
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {jobs.length > 0 ? (
-                jobs.map((job) => (
-                  <tr
-                    key={job.id}
-                    className="border-b border-gray-300 dark:border-gray-700 hover:bg-blue-100 dark:hover:bg-blue-600"
-                  >
-                    <td className="border border-gray-300 dark:border-gray-700 px-4 py-2 text-gray-800 dark:text-gray-200">
-                      {job.id}
-                    </td>
-                    <td className="border border-gray-300 dark:border-gray-700 px-4 py-2 text-gray-800 dark:text-gray-200">
-                      {job.quotation?.service_description || "Sin descripción"}
-                    </td>
-                    <td className="border border-gray-300 dark:border-gray-700 px-4 py-2 text-gray-800 dark:text-gray-200 capitalize">
-                      {formatStatus(job.status)}
-                    </td>
-                    <td className="border border-gray-300 dark:border-gray-700 px-4 py-2">
-                      {job.status === "in_progress" && (
-                        <div className="flex gap-2">
-                          {user.user_type === "client" &&
-                            job.client_ok !== "success" &&
-                            job.chambero_ok === "success" && (
-                              <>
-                                <button
-                                  onClick={() =>
-                                    handleJobAction("success", job.id)
-                                  }
-                                  className="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded"
-                                >
-                                  Terminar
-                                </button>
-                                <button
-                                  onClick={() =>
-                                    handleJobAction("failed", job.id)
-                                  }
-                                  className="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded"
-                                >
-                                  Cancelar
-                                </button>
-                              </>
+        {/* Jobs list container */}
+        <div className="w-full lg:w-3/4 bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Descripción
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Estado
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Cliente
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Chambero
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Acciones
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                {jobs.length > 0 ? (
+                  jobs.map((job) => (
+                    <tr
+                      key={job._id}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700"
+                    >
+                      <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-200">
+                        {job.quotation_id?.service_description || "N/A"}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-200">
+                        {job.status === "in_progress" ? "En Progreso" : "Completado"}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-200">
+                        {job.client_id?.name || "N/A"}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-200">
+                        {job.chambero_id?.name || "N/A"}
+                      </td>
+                      <td className="px-4 py-3">
+                        {job.status === "in_progress" && (
+                          <div className="flex flex-wrap gap-2">
+                            {/* Mostrar el estado de aprobación */}
+                            <div className="text-sm text-gray-600 dark:text-gray-400">
+                              {user.user_type === "client" ? (
+                                job.client_ok ? "✓ Aprobado" : "Pendiente de tu aprobación"
+                              ) : (
+                                job.chambero_ok ? "✓ Aprobado" : "Pendiente de tu aprobación"
+                              )}
+                            </div>
+                            
+                            {/* Botón de aprobar si aún no ha aprobado */}
+                            {((user.user_type === "client" && !job.client_ok) ||
+                              (user.user_type === "chambero" && !job.chambero_ok)) && (
+                              <button
+                                onClick={() => handleApproveJob(job._id)}
+                                className="bg-green-500 hover:bg-green-600 text-white text-sm px-3 py-1 rounded"
+                              >
+                                Aprobar Trabajo
+                              </button>
                             )}
-
-                          {user.user_type === "chambero" &&
-                            job.chambero_ok !== "success" && (
-                              <>
-                                <button
-                                  onClick={() =>
-                                    handleJobAction("success", job.id)
-                                  }
-                                  className="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded"
-                                >
-                                  Terminar
-                                </button>
-                                <button
-                                  onClick={() =>
-                                    handleJobAction("failed", job.id)
-                                  }
-                                  className="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded"
-                                >
-                                  Cancelar
-                                </button>
-                              </>
-                            )}
-                        </div>
-                      )}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td
+                      colSpan="5"
+                      className="px-4 py-3 text-center text-gray-600 dark:text-gray-400"
+                    >
+                      No hay trabajos disponibles
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td
-                    colSpan="4"
-                    className="text-center py-4 text-gray-600 dark:text-gray-400"
-                  >
-                    No hay trabajos disponibles
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -255,3 +251,4 @@ const Jobs = () => {
 };
 
 export default Jobs;
+

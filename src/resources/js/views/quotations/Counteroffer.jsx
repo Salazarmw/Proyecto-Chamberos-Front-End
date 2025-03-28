@@ -15,9 +15,8 @@ const Counteroffer = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchQuotationData = async () => {
+    const fetchQuotation = async () => {
       try {
-        setLoading(true);
         const response = await axios.get(`/api/quotations/${id}`);
         setQuotation(response.data);
 
@@ -31,7 +30,7 @@ const Counteroffer = () => {
         });
         setError(null);
       } catch (error) {
-        console.error("Error fetching quotation data:", error);
+        console.error("Error fetching quotation:", error);
         setError("Error al cargar los datos de la cotización");
       } finally {
         setLoading(false);
@@ -39,7 +38,7 @@ const Counteroffer = () => {
     };
 
     if (id) {
-      fetchQuotationData();
+      fetchQuotation();
     } else {
       setError("ID de cotización no válido");
       setLoading(false);
@@ -67,21 +66,15 @@ const Counteroffer = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
-
     try {
-      const price = formData.price.replace(/,/g, "");
-
-      const response = await axios.put(`/api/quotations/${id}`, {
+      const price = parseInt(formData.price.replace(/,/g, ""));
+      const response = await axios.put(`/api/quotations/${id}/status`, {
+        status: "counteroffer",
+        price: price,
         service_description: formData.service_description,
-        scheduled_date: formData.scheduled_date,
-        price: parseInt(price),
-        status: "offer",
+        scheduled_date: formData.scheduled_date
       });
-
-      if (response.status === 200) {
-        navigate("/quotations");
-      }
+      navigate("/quotations");
     } catch (error) {
       console.error("Error updating quotation:", error);
       setError(

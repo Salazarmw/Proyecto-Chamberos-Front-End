@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import TextInput from "../../components/TextInput";
 import InputLabel from "../../components/InputLabel";
@@ -12,7 +12,7 @@ export default function DeleteUserForm() {
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
-  const { logout } = AuthContext();
+  const { logout } = useContext(AuthContext);
 
   const confirmUserDeletion = () => {
     setConfirmingUserDeletion(true);
