@@ -1,5 +1,6 @@
 import { createContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "../config/axios";
 
 export const AuthContext = createContext();
 
@@ -38,9 +39,11 @@ export const AuthProvider = ({ children }) => {
     checkAuth();
   }, []);
 
-  const login = (userData) => {
-    setUser(userData);
-    localStorage.setItem("token", userData.token);
+  const login = (response) => {
+    // Guardamos el token
+    localStorage.setItem("token", response.token);
+    // Guardamos solo los datos del usuario
+    setUser(response.user);
     navigate("/dashboard");
   };
 
@@ -50,8 +53,12 @@ export const AuthProvider = ({ children }) => {
     navigate("/login");
   };
 
+  const updateUser = (userData) => {
+    setUser(userData);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

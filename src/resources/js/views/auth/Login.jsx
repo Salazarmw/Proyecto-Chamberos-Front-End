@@ -17,24 +17,28 @@ export default function Login() {
 
   const [errors, setErrors] = useState({});
   const [status, setStatus] = useState(null);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { login } = useContext(AuthContext); // Obtener el método login del contexto
+  const { login } = useContext(AuthContext);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setErrors({});
+    setStatus(null);
 
     try {
       const data = await loginUser(formData);
-
-      if (data) {
-        login(data); // Llama al método login del contexto para actualizar el estado global
-      } else {
-        setErrors({ general: "Invalid credentials" });
-        setStatus("Login failed");
-      }
+      login(data);
+      navigate("/dashboard"); // Redirect to dashboard after successful login
     } catch (error) {
       console.error("Login error:", error);
-      setStatus("An error occurred during login");
+      setStatus(error.message || "Error during login");
+      setErrors({
+        general: error.message || "Error during login",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -56,6 +60,7 @@ export default function Login() {
             onChange={(e) =>
               setFormData({ ...formData, email: e.target.value })
             }
+            disabled={loading}
           />
           <InputError messages={errors.email} className="mt-2" />
         </div>
@@ -73,6 +78,7 @@ export default function Login() {
             onChange={(e) =>
               setFormData({ ...formData, password: e.target.value })
             }
+            disabled={loading}
           />
           <InputError messages={errors.password} className="mt-2" />
         </div>
@@ -87,6 +93,7 @@ export default function Login() {
               onChange={(e) =>
                 setFormData({ ...formData, remember: e.target.checked })
               }
+              disabled={loading}
               className="rounded dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800"
             />
             <span className="ms-2 text-sm text-gray-600 dark:text-gray-400">
@@ -103,8 +110,8 @@ export default function Login() {
             Forgot your password?
           </Link>
 
-          <PrimaryButton className="ms-3" type="submit">
-            Log in
+          <PrimaryButton className="ms-3" type="submit" disabled={loading}>
+            {loading ? "Logging in..." : "Log in"}
           </PrimaryButton>
 
           <Link
