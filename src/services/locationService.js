@@ -4,8 +4,8 @@ export const fetchProvinces = async () => {
     if (!response.ok) throw new Error("Error fetching provinces");
     const provinces = await response.json();
     return provinces.map((province) => ({
-      value: province._id, // Usar el ID como valor
-      label: province.name, // Usar el nombre como etiqueta
+      value: province._id, // Use province ID as value
+      label: province.name, // Use province name as label
     }));
   } catch (error) {
     console.error("Error loading provinces:", error);
@@ -16,13 +16,12 @@ export const fetchProvinces = async () => {
 export const fetchCantons = async (provinceId) => {
   if (!provinceId) return [];
   try {
-    const response = await fetch(`http://localhost:5000/api/cantons/${provinceId}`);
+    const response = await fetch(`http://localhost:5000/api/cantons/province/${provinceId}`);
     if (!response.ok) throw new Error("Error fetching cantons");
     const cantons = await response.json();
-    console.log("Cantons fetched from API:", cantons); // Log para depurar
     return cantons.map((canton) => ({
-      value: canton._id, // Usar el ID del cantón como valor
-      label: canton.name, // Usar el nombre del cantón como etiqueta
+      value: canton._id, // Use canton ID as value
+      label: canton.name, // Use canton name as label
     }));
   } catch (error) {
     console.error("Error loading cantons:", error);

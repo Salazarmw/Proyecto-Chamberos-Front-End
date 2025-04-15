@@ -35,6 +35,7 @@ export default function Register() {
   useEffect(() => {
     const loadProvinces = async () => {
       const provincesData = await fetchProvinces();
+      console.log("Provinces data:", provincesData);
       setProvinces(provincesData);
     };
     loadProvinces();
@@ -42,6 +43,7 @@ export default function Register() {
 
   const handleProvinceChange = async (e) => {
     const provinceId = e.target.value;
+    console.log("Selected province ID:", provinceId);
     setFormData({
       ...formData,
       province: provinceId,
@@ -51,7 +53,7 @@ export default function Register() {
     if (provinceId) {
       try {
         const cantonsData = await fetchCantons(provinceId);
-        console.log("Cantons fetched:", cantonsData);
+        console.log("Cantons data:", cantonsData);
         setCantons(cantonsData);
       } catch (error) {
         console.error("Error fetching cantons:", error);

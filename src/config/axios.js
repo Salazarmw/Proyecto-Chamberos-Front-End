@@ -12,29 +12,22 @@ const instance = axios.create({
 instance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
-    console.log("Axios - Token from localStorage:", token);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log("Axios - Authorization header set:", config.headers.Authorization);
     }
     return config;
   },
   (error) => {
-    console.error("Axios - Request interceptor error:", error);
     return Promise.reject(error);
   }
 );
 
 // Add a response interceptor
 instance.interceptors.response.use(
-  (response) => {
-    console.log("Axios - Response received:", response);
-    return response;
-  },
+  (response) => response,
   (error) => {
-    console.error("Axios - Response error:", error);
     if (error.response && error.response.status === 401) {
-      console.log("Axios - Unauthorized, removing token and redirecting");
+      // Handle unauthorized access
       localStorage.removeItem("token");
       window.location.href = "/login";
     }
@@ -42,4 +35,4 @@ instance.interceptors.response.use(
   }
 );
 
-export default instance;
+export default instance; 

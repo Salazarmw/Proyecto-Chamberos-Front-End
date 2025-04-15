@@ -16,6 +16,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [provinceNames, setProvinceNames] = useState({});
   const [cantonNames, setCantonNames] = useState({});
+  const [filteredUsers, setFilteredUsers] = useState([]);
 
   // Fetch initial data
   useEffect(() => {
@@ -37,9 +38,18 @@ export default function Dashboard() {
         setTags(tagsResponse.data);
 
         // Fetch users
-        const usersResponse = await axios.get("/api/users");
-        setUsers(usersResponse.data);
-        setInitialUsers(usersResponse.data);
+        const usersResponse = await axios.get("/api/users", {
+          params: {
+            populate: "tags"
+          }
+        });
+        
+        // Filter only chambero type users
+        const chamberos = usersResponse.data.filter(user => user.user_type === "chambero");
+        
+        setUsers(chamberos);
+        setInitialUsers(chamberos);
+        setFilteredUsers(chamberos);
 
         setLoading(false);
       } catch (error) {
@@ -70,12 +80,31 @@ export default function Dashboard() {
           cantonMap[canton._id] = canton.name;
         });
         setCantonNames(cantonMap);
+
+        // Update filtered users
+        const filtered = users.filter(user => user.province === provinceId);
+        setFilteredUsers(filtered);
       } catch (error) {
         console.error("Error fetching cantons:", error);
         setCantons([]);
       }
     } else {
       setCantons([]);
+      setFilteredUsers(users);
+    }
+  };
+
+  // Handle canton change
+  const handleCantonChange = (e) => {
+    const cantonId = e.target.value;
+    setSelectedCanton(cantonId);
+
+    if (cantonId) {
+      const filtered = users.filter(user => user.canton === cantonId);
+      setFilteredUsers(filtered);
+    } else {
+      const filtered = users.filter(user => user.province === selectedProvince);
+      setFilteredUsers(filtered);
     }
   };
 
@@ -86,44 +115,53 @@ export default function Dashboard() {
   };
 
   // Handling tag changes
-  const handleTagChange = (tagId) => {
-    setSelectedTags((prev) =>
-      prev.includes(tagId)
+  const handleTagFilter = (tagId) => {
+    setSelectedTags((prev) => {
+      const newTags = prev.includes(tagId)
         ? prev.filter((id) => id !== tagId)
-        : [...prev, tagId]
-    );
+        : [...prev, tagId];
+      return newTags;
+    });
   };
 
   // Apply filters
-  const handleFilter = () => {
-    let filtered = [...initialUsers];
+  useEffect(() => {
+    let filtered = [...users];
 
+    // Filter by province
     if (selectedProvince) {
       filtered = filtered.filter((user) => user.province === selectedProvince);
     }
 
+    // Filter by canton
     if (selectedCanton) {
       filtered = filtered.filter((user) => user.canton === selectedCanton);
     }
 
+    // Filter by tags
     if (selectedTags.length > 0) {
       filtered = filtered.filter((user) =>
-        selectedTags.every(
-          (tagId) => user.tags && user.tags.some((tag) => tag._id === tagId)
+        selectedTags.every((tagId) =>
+          user.tags && user.tags.some((tag) => tag._id === tagId)
         )
       );
     }
 
+    // Filter by tag search
     if (searchQuery) {
       filtered = filtered.filter(
         (user) =>
           user.name.toLowerCase().includes(searchQuery) ||
-          user.email.toLowerCase().includes(searchQuery)
+          user.email.toLowerCase().includes(searchQuery) ||
+          (user.tags &&
+            user.tags.some((tag) =>
+              tag.name.toLowerCase().includes(searchQuery)
+            ))
       );
     }
 
-    setUsers(filtered);
-  };
+    setFilteredUsers(filtered);
+  }, [users, selectedProvince, selectedCanton, selectedTags, searchQuery]);
 
   if (loading) {
     return <div className="p-4 text-center">Loading...</div>;
@@ -160,15 +198,15 @@ export default function Dashboard() {
           {/* Canton */}
           <div className="mt-4">
             <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">
-              Cantón
+              Canton
             </label>
             <select
               value={selectedCanton}
-              onChange={(e) => setSelectedCanton(e.target.value)}
+              onChange={handleCantonChange}
               className="block w-full p-2.5 bg-white border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:ring focus:ring-indigo-300 dark:focus:ring-indigo-700"
               disabled={!selectedProvince}
             >
-              <option value="">Seleccione un cantón</option>
+              <option value="">Seleccione un canton</option>
               {cantons.map((canton) => (
                 <option key={canton._id} value={canton._id}>
                   {canton.name}
@@ -183,12 +221,12 @@ export default function Dashboard() {
               htmlFor="searchJobs"
               className="block text-gray-700 dark:text-gray-300 font-medium mb-2"
             >
-              Buscar trabajos
+              Buscar por nombre de servicio
             </label>
             <input
               id="searchJobs"
               type="text"
-              placeholder="Escribe un trabajo..."
+              placeholder="Escribe un servicio..."
               value={searchQuery}
               onChange={handleSearch}
               className="block w-full p-2.5 bg-white border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:ring focus:ring-indigo-300 dark:focus:ring-indigo-700"
@@ -197,7 +235,7 @@ export default function Dashboard() {
 
           {/* Job List */}
           <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
-            Trabajos
+            Servicios disponibles
           </h3>
           <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">
             {tags && tags.length > 0 ? (
@@ -206,24 +244,26 @@ export default function Dashboard() {
                   <input
                     type="checkbox"
                     checked={selectedTags.includes(tag._id)}
-                    onChange={() => handleTagChange(tag._id)}
+                    onChange={() => handleTagFilter(tag._id)}
                     className="form-checkbox h-5 w-5 text-indigo-600 dark:text-indigo-400"
                   />
                   <span className="text-gray-700 dark:text-gray-300">
-                    {tag.description}
+                    {tag.name}
                   </span>
                 </label>
               ))
             ) : (
               <p className="text-gray-700 dark:text-gray-300">
-                No hay trabajos disponibles.
+                No hay servicios disponibles.
               </p>
             )}
           </div>
 
           {/* Filter button */}
           <button
-            onClick={handleFilter}
+            onClick={() => {
+              // Implement the filter logic here
+            }}
             className="mt-4 w-full bg-indigo-600 text-white py-2 rounded-md shadow-lg hover:bg-indigo-700 focus:outline-none"
           >
             Filtrar
@@ -237,28 +277,21 @@ export default function Dashboard() {
           </h1>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-            {users && users.length > 0 ? (
-              users.map((user) => (
+            {filteredUsers && filteredUsers.length > 0 ? (
+              filteredUsers.map((user) => (
                 <Card
                   key={user._id}
-                  title={user.name}
-                  description={user.email}
-                  phone={user.phone || "Sin teléfono"}
-                  province={provinceNames[user.province] || "Sin provincia"}
-                  canton={cantonNames[user.canton] || "Sin cantón"}
-                  address={user.address || "Sin dirección"}
-                  profilePhoto={
-                    user.profile_photo
-                      ? `http://localhost:5000/${user.profile_photo}`
-                      : "/storage/profile-photos/DefaultImage.jpeg"
-                  }
-                  userId={user._id}
+                  user={user}
                 />
               ))
             ) : (
-              <p className="col-span-full text-gray-700 dark:text-gray-300">
-                No hay chamberos disponibles.
-              </p>
+              <div className="col-span-full text-center text-gray-600 dark:text-gray-400">
+                {selectedProvince || selectedCanton || selectedTags.length > 0 || searchQuery ? (
+                  "No se encontraron chamberos con los filtros seleccionados."
+                ) : (
+                  "No hay chamberos registrados en el sistema."
+                )}
+              </div>
             )}
           </div>
         </div>

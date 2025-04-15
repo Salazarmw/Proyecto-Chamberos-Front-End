@@ -53,38 +53,22 @@ const CreateQuotation = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
-
-    if (!user || !user._id) {
-      setError("Debe iniciar sesión para crear una cotización");
-      return;
-    }
-
     try {
-      const price = formData.price.replace(/,/g, "");
-
+      const price = parseInt(formData.price.replace(/,/g, ""));
       const quotationData = {
-        client_id: user._id,
+        client_id: user.id,
         chambero_id: chamberoId,
         service_description: formData.service_description,
         scheduled_date: formData.scheduled_date,
-        price: parseInt(price),
-        status: "pending",
+        price: price,
+        status: "pending"
       };
 
-      console.log("Sending quotation data:", quotationData);
-
       const response = await axios.post("/api/quotations", quotationData);
-
-      if (response.data) {
-        navigate("/quotations");
-      }
+      navigate("/quotations");
     } catch (error) {
       console.error("Error creating quotation:", error);
-      setError(
-        error.response?.data?.message ||
-          "Error al crear la cotización. Verifique que todos los campos estén completos."
-      );
+      setError(error.response?.data?.message || "Error creating quotation");
     }
   };
 

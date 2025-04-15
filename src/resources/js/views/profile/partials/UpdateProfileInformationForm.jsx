@@ -1,29 +1,82 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useContext, useEffect } from "react";
 import InputLabel from "../../components/InputLabel";
 import TextInput from "../../components/TextInput";
 import InputError from "../../components/InputError";
 import PrimaryButton from "../../components/PrimaryButton";
 import { AuthContext } from "../../../../../context/AuthContext";
+import axios from "../../../../../config/axios";
 
-export default function UpdateProfileInformationForm({ user, tags }) {
-  const { updateUser } = AuthContext();
+export default function UpdateProfileInformationForm({ user, tags, onUpdate }) {
+  const { updateUser } = useContext(AuthContext);
   const [formData, setFormData] = useState({
-    name: user?.name || "",
-    lastname: user?.lastname || "",
-    email: user?.email || "",
-    phone: user?.phone || "",
-    province: user?.province || "",
-    canton: user?.canton || "",
-    address: user?.address || "",
-    birth_date: user?.birth_date ? formatDate(user.birth_date) : "",
-    tags: user?.tags?.map((tag) => tag.id) || [],
+    name: "",
+    lastname: "",
+    email: "",
+    phone: "",
+    province: "",
+    canton: "",
+    address: "",
+    birth_date: "",
+    tags: [],
     profile_photo: null,
   });
 
+  const [provinces, setProvinces] = useState([]);
+  const [cantons, setCantons] = useState([]);
   const [errors, setErrors] = useState({});
   const [status, setStatus] = useState(null);
   const [emailVerificationSent, setEmailVerificationSent] = useState(false);
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    // Cargar provincias al montar el componente
+    fetchProvinces();
+  }, []);
+
+  useEffect(() => {
+    // Cargar cantones cuando cambie la provincia
+    if (formData.province) {
+      fetchCantons(formData.province);
+    }
+  }, [formData.province]);
+
+  useEffect(() => {
+    // Actualizar el formulario cuando cambien los datos del usuario
+    if (user) {
+      setFormData({
+        name: user.name || "",
+        lastname: user.lastname || "",
+        email: user.email || "",
+        phone: user.phone || "",
+        province: user.province || "",
+        canton: user.canton || "",
+        address: user.address || "",
+        birth_date: user.birth_date ? formatDate(user.birth_date) : "",
+        tags: user.tags?.map((tag) => tag._id) || [],
+        profile_photo: null,
+      });
+    }
+  }, [user]);
+
+  const fetchProvinces = async () => {
+    try {
+      const response = await axios.get("/api/provinces");
+      setProvinces(response.data);
+      console.log("Provincias cargadas:", response.data);
+    } catch (error) {
+      console.error("Error fetching provinces:", error);
+    }
+  };
+
+  const fetchCantons = async (provinceId) => {
+    try {
+      const response = await axios.get(`/api/cantons/province/${provinceId}`);
+      setCantons(response.data);
+      console.log("Cantones cargados:", response.data);
+    } catch (error) {
+      console.error("Error fetching cantons:", error);
+    }
+  };
 
   function formatDate(dateString) {
     const date = new Date(dateString);
@@ -92,39 +145,74 @@ export default function UpdateProfileInformationForm({ user, tags }) {
     // Append all form fields
     Object.keys(formData).forEach((key) => {
       if (key === "tags") {
+        // Convertir los IDs a string antes de enviarlos
         formData[key].forEach((tagId) => {
-          submitData.append("tags[]", tagId);
+          submitData.append("tags[]", tagId.toString());
         });
       } else if (key === "profile_photo" && formData[key]) {
         submitData.append(key, formData[key]);
+      } else if (key === "birth_date") {
+        // Ensure date is in the correct format
+        const formattedDate = new Date(formData[key]).toISOString().split('T')[0];
+        submitData.append(key, formattedDate);
       } else {
         submitData.append(key, formData[key]);
       }
     });
 
-    // Add method field for Laravel
-    submitData.append("_method", "PATCH");
+    // Log para depuración
+    console.log("Datos a enviar:", {
+      name: submitData.get("name"),
+      lastname: submitData.get("lastname"),
+      email: submitData.get("email"),
+      phone: submitData.get("phone"),
+      province: submitData.get("province"),
+      canton: submitData.get("canton"),
+      address: submitData.get("address"),
+      birth_date: submitData.get("birth_date"),
+      tags: submitData.getAll("tags[]"),
+      profile_photo: submitData.get("profile_photo"),
+    });
 
     try {
-      const response = await fetch("/api/profile", {
-        method: "POST", // FormData requires POST
-        body: submitData,
+      // Convertir FormData a objeto plano para enviar como JSON
+      const data = {};
+      submitData.forEach((value, key) => {
+        if (key === "tags[]") {
+          if (!data.tags) data.tags = [];
+          data.tags.push(value);
+        } else {
+          data[key] = value;
+        }
       });
 
-      if (response.ok) {
+      const response = await axios.put("/api/users/me", data, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.status === 200) {
         setStatus("profile-updated");
-        updateUser(formData);
+        
+        // Actualizar el contexto global
+        updateUser(response.data);
+        
+        // Recargar los datos
+        onUpdate();
 
         // Hide status message after 2 seconds
         setTimeout(() => {
           setStatus(null);
         }, 2000);
-      } else {
-        const data = await response.json();
-        setErrors(data.errors || {});
       }
     } catch (error) {
       console.error("Profile update error:", error);
+      if (error.response?.data?.errors) {
+        setErrors(error.response.data.errors);
+      } else if (error.response?.data?.message) {
+        setErrors({ general: error.response.data.message });
+      }
     }
   };
 
@@ -141,6 +229,13 @@ export default function UpdateProfileInformationForm({ user, tags }) {
       </header>
 
       <form className="mt-6 space-y-6" onSubmit={handleSubmit}>
+        {/* Error general */}
+        {errors.general && (
+          <div className="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg dark:bg-red-200 dark:text-red-800" role="alert">
+            {errors.general}
+          </div>
+        )}
+
         {/* Name field */}
         <div>
           <InputLabel htmlFor="name" value="Name" />
@@ -225,30 +320,43 @@ export default function UpdateProfileInformationForm({ user, tags }) {
         {/* Province field */}
         <div>
           <InputLabel htmlFor="province" value="Province" />
-          <TextInput
+          <select
             id="province"
             name="province"
-            type="text"
-            className="mt-1 block w-full"
             value={formData.province}
             onChange={handleInputChange}
+            className="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
             required
-          />
+          >
+            <option value="">Select a province</option>
+            {provinces.map((province) => (
+              <option key={`province-${province._id}`} value={province._id}>
+                {province.name}
+              </option>
+            ))}
+          </select>
           <InputError messages={errors.province} className="mt-2" />
         </div>
 
         {/* Canton field */}
         <div>
           <InputLabel htmlFor="canton" value="Canton" />
-          <TextInput
+          <select
             id="canton"
             name="canton"
-            type="text"
-            className="mt-1 block w-full"
             value={formData.canton}
             onChange={handleInputChange}
+            className="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
             required
-          />
+            disabled={!formData.province}
+          >
+            <option value="">Select a canton</option>
+            {cantons.map((canton) => (
+              <option key={`canton-${canton._id}`} value={canton._id}>
+                {canton.name}
+              </option>
+            ))}
+          </select>
           <InputError messages={errors.canton} className="mt-2" />
         </div>
 
@@ -285,28 +393,29 @@ export default function UpdateProfileInformationForm({ user, tags }) {
         {/* Chambero Tags Section (Only for Chambero type users) */}
         {user && user.user_type === "chambero" && (
           <div>
-            <InputLabel htmlFor="tags" value="Professional Tags" />
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              {tags.map((tag) => (
-                <label key={tag.id} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    name="tags"
-                    value={tag.id}
-                    checked={formData.tags.includes(tag.id)}
-                    onChange={handleInputChange}
-                    className="rounded dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800"
-                  />
-                  <span className="text-gray-700 dark:text-gray-300">
-                    {tag.description}
-                  </span>
-                </label>
-              ))}
+            <InputLabel htmlFor="tags" value="Servicios ofrecidos" />
+            <div className="mt-2 max-h-[200px] overflow-y-auto p-4 border border-gray-300 dark:border-gray-700 rounded-lg [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-indigo-600 [&::-webkit-scrollbar-thumb]:rounded-full dark:[&::-webkit-scrollbar-thumb]:bg-indigo-400">
+              <div className="grid grid-cols-2 gap-3">
+                {tags.map((tag) => (
+                  <label key={tag._id} className="flex items-center space-x-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md transition-colors">
+                    <input
+                      type="checkbox"
+                      name="tags"
+                      value={tag._id}
+                      checked={formData.tags.includes(tag._id)}
+                      onChange={handleInputChange}
+                      className="rounded dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800"
+                    />
+                    <span className="text-gray-700 dark:text-gray-300">
+                      {tag.name}
+                    </span>
+                  </label>
+                ))}
+              </div>
             </div>
             <InputError messages={errors.tags} className="mt-2" />
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-              Select up to 10 tags that describe your professional skills and
-              services.
+              Selecciona hasta 10 etiquetas que describan tus habilidades y servicios profesionales.
             </p>
           </div>
         )}
