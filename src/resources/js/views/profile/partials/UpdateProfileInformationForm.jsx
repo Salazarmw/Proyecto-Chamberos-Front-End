@@ -5,6 +5,8 @@ import InputError from "../../components/InputError";
 import PrimaryButton from "../../components/PrimaryButton";
 import { AuthContext } from "../../../../../context/AuthContext";
 import axios from "../../../../../config/axios";
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export default function UpdateProfileInformationForm({ user, tags, onUpdate }) {
   const { updateUser } = useContext(AuthContext);
@@ -138,81 +140,92 @@ export default function UpdateProfileInformationForm({ user, tags, onUpdate }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Create form data object for file upload
-    const submitData = new FormData();
-
-    // Append all form fields
-    Object.keys(formData).forEach((key) => {
-      if (key === "tags") {
-        // Convertir los IDs a string antes de enviarlos
-        formData[key].forEach((tagId) => {
-          submitData.append("tags[]", tagId.toString());
-        });
-      } else if (key === "profile_photo" && formData[key]) {
-        submitData.append(key, formData[key]);
-      } else if (key === "birth_date") {
-        // Ensure date is in the correct format
-        const formattedDate = new Date(formData[key]).toISOString().split('T')[0];
-        submitData.append(key, formattedDate);
-      } else {
-        submitData.append(key, formData[key]);
-      }
-    });
-
-    // Log para depuración
-    console.log("Datos a enviar:", {
-      name: submitData.get("name"),
-      lastname: submitData.get("lastname"),
-      email: submitData.get("email"),
-      phone: submitData.get("phone"),
-      province: submitData.get("province"),
-      canton: submitData.get("canton"),
-      address: submitData.get("address"),
-      birth_date: submitData.get("birth_date"),
-      tags: submitData.getAll("tags[]"),
-      profile_photo: submitData.get("profile_photo"),
-    });
+    setErrors({});
 
     try {
-      // Convertir FormData a objeto plano para enviar como JSON
-      const data = {};
-      submitData.forEach((value, key) => {
-        if (key === "tags[]") {
-          if (!data.tags) data.tags = [];
-          data.tags.push(value);
-        } else {
-          data[key] = value;
-        }
-      });
+      // Primero, vamos a enviar solo los datos básicos sin el archivo
+      const basicData = {
+        name: formData.name,
+        lastname: formData.lastname,
+        email: formData.email,
+        phone: formData.phone,
+        province: formData.province,
+        canton: formData.canton,
+        address: formData.address,
+        birth_date: formData.birth_date ? new Date(formData.birth_date).toISOString().split('T')[0] : null,
+        tags: formData.tags
+      };
 
-      const response = await axios.put("/api/users/me", data, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await axios.put("/api/users/me", basicData);
 
       if (response.status === 200) {
-        setStatus("profile-updated");
-        
-        // Actualizar el contexto global
-        updateUser(response.data);
-        
-        // Recargar los datos
-        onUpdate();
+        // Si hay una foto de perfil, la enviamos en una segunda petición
+        if (formData.profile_photo) {
+          console.log("Enviando foto de perfil:", formData.profile_photo);
+          
+          const photoData = new FormData();
+          photoData.append('profile_photo', formData.profile_photo);
 
-        // Hide status message after 2 seconds
-        setTimeout(() => {
-          setStatus(null);
-        }, 2000);
+          try {
+            const photoResponse = await axios.post("/api/users/me/profile-photo", photoData, {
+              headers: {
+                'Content-Type': 'multipart/form-data'
+              }
+            });
+
+            console.log("Respuesta de subida de foto:", photoResponse);
+
+            if (photoResponse.status !== 200) {
+              throw new Error('Error uploading profile photo');
+            }
+
+            // Actualizar el usuario con la respuesta del servidor
+            if (photoResponse.data) {
+              updateUser(photoResponse.data);
+            }
+          } catch (photoError) {
+            console.error("Error al subir la foto:", photoError);
+            toast.error(photoError.response?.data?.message || "Error uploading profile photo", {
+              position: "top-right",
+              autoClose: 3000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+            });
+          }
+        } else {
+          // Si no hay foto, actualizar con la respuesta de la primera petición
+          updateUser(response.data);
+        }
+
+        setStatus("profile-updated");
+        if (onUpdate) onUpdate();
+        
+        toast.success('Profile updated successfully!', {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
       }
     } catch (error) {
       console.error("Profile update error:", error);
-      if (error.response?.data?.errors) {
-        setErrors(error.response.data.errors);
-      } else if (error.response?.data?.message) {
-        setErrors({ general: error.response.data.message });
-      }
+      const errorMessage = error.response?.data?.message || "Error updating profile";
+      setErrors(error.response?.data?.errors || {
+        general: errorMessage
+      });
+      
+      toast.error(errorMessage, {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
     }
   };
 
@@ -235,6 +248,53 @@ export default function UpdateProfileInformationForm({ user, tags, onUpdate }) {
             {errors.general}
           </div>
         )}
+
+        {/* Profile photo section */}
+        <div className="flex flex-col items-center justify-center space-y-4">
+          <div className="relative">
+            {user && user.profile_photo ? (
+              <img
+                src={`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/uploads/profile-photos/${user.profile_photo}`}
+                alt="Profile Photo"
+                className="rounded-full h-32 w-32 object-cover border-4 border-indigo-500 dark:border-indigo-400"
+                onError={(e) => {
+                  console.log("Error loading profile photo, falling back to default");
+                  e.target.onerror = null;
+                  e.target.src = `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/uploads/profile-photos/DefaultImage.jpeg`;
+                }}
+              />
+            ) : (
+              <div className="rounded-full h-32 w-32 bg-gray-200 dark:bg-gray-700 flex items-center justify-center border-4 border-indigo-500 dark:border-indigo-400">
+                <img
+                  src={`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/uploads/profile-photos/DefaultImage.jpeg`}
+                  alt="Default Profile"
+                  className="h-32 w-32 object-cover rounded-full"
+                  onError={(e) => {
+                    console.log("Error loading default photo");
+                    e.target.onerror = null;
+                    e.target.style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
+            <label htmlFor="profile_photo" className="absolute bottom-0 right-0 bg-indigo-500 dark:bg-indigo-400 rounded-full p-2 cursor-pointer hover:bg-indigo-600 dark:hover:bg-indigo-500 transition-colors">
+              <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <input
+                type="file"
+                id="profile_photo"
+                name="profile_photo"
+                accept="image/*"
+                ref={fileInputRef}
+                onChange={handleInputChange}
+                className="hidden"
+              />
+            </label>
+          </div>
+          <InputError messages={errors.profile_photo} className="mt-2" />
+        </div>
 
         {/* Name field */}
         <div>
@@ -419,28 +479,6 @@ export default function UpdateProfileInformationForm({ user, tags, onUpdate }) {
             </p>
           </div>
         )}
-
-        {/* Profile photo field */}
-        <div>
-          <InputLabel htmlFor="profile_photo" value="Profile Photo" />
-          <input
-            type="file"
-            id="profile_photo"
-            name="profile_photo"
-            accept="image/*"
-            ref={fileInputRef}
-            onChange={handleInputChange}
-            className="mt-1 block w-full text-gray-700 dark:text-gray-300"
-          />
-          {user && user.profile_photo && (
-            <img
-              src={`/storage/${user.profile_photo}`}
-              alt="Profile Photo"
-              className="mt-2 rounded-full h-20 w-20 object-cover"
-            />
-          )}
-          <InputError messages={errors.profile_photo} className="mt-2" />
-        </div>
 
         {/* Save button */}
         <div className="flex items-center gap-4">

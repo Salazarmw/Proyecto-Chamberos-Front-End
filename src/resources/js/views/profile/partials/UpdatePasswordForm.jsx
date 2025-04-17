@@ -4,6 +4,8 @@ import TextInput from "../../components/TextInput";
 import InputError from "../../components/InputError";
 import PrimaryButton from "../../components/PrimaryButton";
 import axios from "../../../../../config/axios";
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export default function UpdatePasswordForm() {
   const [formData, setFormData] = useState({
@@ -25,6 +27,7 @@ export default function UpdatePasswordForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrors({});
 
     try {
       const response = await axios.put("/api/users/me/password", formData);
@@ -38,6 +41,16 @@ export default function UpdatePasswordForm() {
         });
 
         setStatus("password-updated");
+        
+        // Show success toast
+        toast.success('Password updated successfully!', {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
 
         // Hide status message after 2 seconds
         setTimeout(() => {
@@ -46,11 +59,23 @@ export default function UpdatePasswordForm() {
       }
     } catch (error) {
       console.error("Password update error:", error);
+      const errorMessage = error.response?.data?.message || "Error updating password";
+      
       if (error.response?.data?.errors) {
         setErrors(error.response.data.errors);
-      } else if (error.response?.data?.message) {
-        setErrors({ general: error.response.data.message });
+      } else {
+        setErrors({ general: errorMessage });
       }
+      
+      // Show error toast
+      toast.error(errorMessage, {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
     }
   };
 
@@ -84,6 +109,7 @@ export default function UpdatePasswordForm() {
             value={formData.current_password}
             onChange={handleInputChange}
             autoComplete="current-password"
+            required
           />
           <InputError messages={errors.current_password} className="mt-2" />
         </div>
@@ -98,6 +124,7 @@ export default function UpdatePasswordForm() {
             value={formData.password}
             onChange={handleInputChange}
             autoComplete="new-password"
+            required
           />
           <InputError messages={errors.password} className="mt-2" />
         </div>
@@ -115,6 +142,7 @@ export default function UpdatePasswordForm() {
             value={formData.password_confirmation}
             onChange={handleInputChange}
             autoComplete="new-password"
+            required
           />
           <InputError
             messages={errors.password_confirmation}
