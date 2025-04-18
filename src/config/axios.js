@@ -3,9 +3,6 @@ import axios from "axios";
 // Create axios instance with default config
 const instance = axios.create({
   baseURL: "http://localhost:5000",
-  headers: {
-    "Content-Type": "application/json",
-  },
 });
 
 // Add a request interceptor
@@ -15,6 +12,14 @@ instance.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Set Content-Type based on the data being sent
+    if (config.data instanceof FormData) {
+      config.headers["Content-Type"] = "multipart/form-data";
+    } else {
+      config.headers["Content-Type"] = "application/json";
+    }
+    
     return config;
   },
   (error) => {
