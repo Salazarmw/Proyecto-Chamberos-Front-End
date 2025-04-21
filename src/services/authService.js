@@ -11,7 +11,7 @@ export const loginUser = async (formData) => {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || "Error en el inicio de sesión");
+      throw new Error(data.message || "Login failed");
     }
 
     localStorage.setItem("token", data.token);

@@ -6,6 +6,7 @@ import InputError from "../components/InputError";
 import PrimaryButton from "../components/PrimaryButton";
 import AuthSessionStatus from "../components/AuthSessionStatus";
 import { loginUser } from "../../../../services/authService";
+import { resendVerificationEmail } from "../../../../services/verificationService";
 import { AuthContext } from "../../../../context/AuthContext";
 
 export default function Login() {
@@ -18,6 +19,8 @@ export default function Login() {
   const [errors, setErrors] = useState({});
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [showResendVerification, setShowResendVerification] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
   const navigate = useNavigate();
   const { login } = useContext(AuthContext);
 
@@ -26,19 +29,34 @@ export default function Login() {
     setLoading(true);
     setErrors({});
     setStatus(null);
+    setShowResendVerification(false);
+    setResendMessage("");
 
     try {
       const data = await loginUser(formData);
       login(data);
-      navigate("/dashboard"); // Redirect to dashboard after successful login
+      navigate("/dashboard");
     } catch (error) {
       console.error("Login error:", error);
+      if (error.response?.data?.isVerified === false) {
+        setShowResendVerification(true);
+      }
       setStatus(error.message || "Error during login");
       setErrors({
         general: error.message || "Error during login",
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    try {
+      await resendVerificationEmail(formData.email);
+      setResendMessage("The verification email has been resent.");
+      setShowResendVerification(false);
+    } catch (error) {
+      setStatus(error.message || "Error resending verification email");
     }
   };
 
@@ -101,6 +119,27 @@ export default function Login() {
             </span>
           </label>
         </div>
+
+        {showResendVerification && (
+          <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 rounded-md border border-yellow-200 dark:border-yellow-800">
+            <p className="text-sm mb-2">
+              Tu correo electrónico no ha sido verificado.
+            </p>
+            <button
+              type="button"
+              onClick={handleResendVerification}
+              className="text-sm underline hover:text-yellow-700 dark:hover:text-yellow-300"
+            >
+              Reenviar correo de verificación
+            </button>
+          </div>
+        )}
+
+        {resendMessage && (
+          <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-md border border-green-200 dark:border-green-800">
+            {resendMessage}
+          </div>
+        )}
 
         <div className="flex items-center justify-end mt-4">
           <Link

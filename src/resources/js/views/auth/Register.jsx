@@ -31,6 +31,7 @@ export default function Register() {
   const [errors, setErrors] = useState({});
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState(null);
 
   useEffect(() => {
     const loadProvinces = async () => {
@@ -100,9 +101,22 @@ export default function Register() {
         return;
       }
 
-      // Registro exitoso, redirigir a login
-      alert("Registro exitoso. Por favor, inicie sesión.");
-      navigate("/login");
+      // Registro exitoso, mostrar mensaje de verificación
+      setMessage(
+        "Registro exitoso. Por favor, verifica tu correo electrónico para activar tu cuenta."
+      );
+      setFormData({
+        name: "",
+        lastname: "",
+        email: "",
+        phone: "",
+        province: "",
+        canton: "",
+        address: "",
+        birth_date: new Date().toISOString().split("T")[0],
+        password: "",
+        password_confirmation: "",
+      });
     } catch (err) {
       console.error("Error en el registro:", err);
       setError("Ocurrió un error durante el registro. Intente nuevamente.");
@@ -276,8 +290,15 @@ export default function Register() {
 
       {/* Error general */}
       {error && (
-        <div className="mt-4 text-sm text-red-600 dark:text-red-400">
+        <div className="mt-4 p-2 bg-red-50 dark:bg-red-900/20 text-sm text-red-600 dark:text-red-400 rounded border border-red-200 dark:border-red-800">
           {error}
+        </div>
+      )}
+
+      {/* Mensaje de éxito */}
+      {message && (
+        <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-md border border-green-200 dark:border-green-800">
+          {message}
         </div>
       )}
 

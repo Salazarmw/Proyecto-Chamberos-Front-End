@@ -34,6 +34,7 @@ export default function ChamberoRegister() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [loadingInitial, setLoadingInitial] = useState(true);
+  const [message, setMessage] = useState(null);
 
   useEffect(() => {
     const loadInitialData = async () => {
@@ -110,6 +111,7 @@ export default function ChamberoRegister() {
     setLoading(true);
     setError(null);
     setErrors({});
+    setMessage(null);
 
     if (formData.password !== formData.password_confirmation) {
       setErrors({ password_confirmation: "Las contraseñas no coinciden" });
@@ -136,8 +138,22 @@ export default function ChamberoRegister() {
       const response = await axios.post("/api/auth/register", userData);
       console.log("Respuesta del registro:", response.data);
 
-      alert("Registro exitoso. Por favor, inicie sesión.");
-      navigate("/login");
+      setMessage(
+        "Registro exitoso. Por favor, verifica tu correo electrónico para activar tu cuenta."
+      );
+      setFormData({
+        name: "",
+        lastname: "",
+        email: "",
+        phone: "",
+        province: "",
+        canton: "",
+        address: "",
+        birth_date: new Date().toISOString().split("T")[0],
+        password: "",
+        password_confirmation: "",
+        tags: [],
+      });
     } catch (error) {
       console.error("Error en el registro:", error);
 
@@ -366,6 +382,13 @@ export default function ChamberoRegister() {
       {error && (
         <div className="mt-4 p-2 bg-red-50 dark:bg-red-900/20 text-sm text-red-600 dark:text-red-400 rounded border border-red-200 dark:border-red-800">
           {error}
+        </div>
+      )}
+
+      {/* Mensaje de éxito */}
+      {message && (
+        <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-md border border-green-200 dark:border-green-800">
+          {message}
         </div>
       )}
 

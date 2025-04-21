@@ -4,8 +4,6 @@ import TextInput from "../../components/TextInput";
 import InputError from "../../components/InputError";
 import PrimaryButton from "../../components/PrimaryButton";
 import axios from "../../../../../config/axios";
-import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 
 export default function UpdatePasswordForm() {
   const [formData, setFormData] = useState({
@@ -16,6 +14,7 @@ export default function UpdatePasswordForm() {
 
   const [errors, setErrors] = useState({});
   const [status, setStatus] = useState(null);
+  const [message, setMessage] = useState(null);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -28,6 +27,7 @@ export default function UpdatePasswordForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrors({});
+    setMessage(null);
 
     try {
       const response = await axios.put("/api/users/me/password", formData);
@@ -41,21 +41,12 @@ export default function UpdatePasswordForm() {
         });
 
         setStatus("password-updated");
+        setMessage("Password updated successfully!");
         
-        // Show success toast
-        toast.success('Password updated successfully!', {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-        });
-
-        // Hide status message after 2 seconds
+        // Hide message after 3 seconds
         setTimeout(() => {
-          setStatus(null);
-        }, 2000);
+          setMessage(null);
+        }, 3000);
       }
     } catch (error) {
       console.error("Password update error:", error);
@@ -67,15 +58,7 @@ export default function UpdatePasswordForm() {
         setErrors({ general: errorMessage });
       }
       
-      // Show error toast
-      toast.error(errorMessage, {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      });
+      setMessage(errorMessage);
     }
   };
 
@@ -96,6 +79,13 @@ export default function UpdatePasswordForm() {
         {errors.general && (
           <div className="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg dark:bg-red-200 dark:text-red-800" role="alert">
             {errors.general}
+          </div>
+        )}
+
+        {/* Success message */}
+        {message && !errors.general && (
+          <div className="p-4 mb-4 text-sm text-green-700 bg-green-100 rounded-lg dark:bg-green-200 dark:text-green-800" role="alert">
+            {message}
           </div>
         )}
 
