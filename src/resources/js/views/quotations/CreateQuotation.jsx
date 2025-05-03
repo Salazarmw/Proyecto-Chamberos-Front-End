@@ -107,14 +107,14 @@ const CreateQuotation = () => {
           <img
             src={
               chambero.profile_photo
-                ? `http://localhost:5000/${chambero.profile_photo}`
-                : "/storage/profile-photos/DefaultImage.jpeg"
+                ? chambero.profile_photo
+                : "https://chambero-profile-bucket.s3.us-east-2.amazonaws.com/Profile_avatar_placeholder_large.png"
             }
             alt="Profile Photo"
             className="w-16 h-16 rounded-full object-cover"
             onError={(e) => {
               e.target.onerror = null;
-              e.target.src = "/storage/profile-photos/DefaultImage.jpeg";
+              e.target.src = "https://chambero-profile-bucket.s3.us-east-2.amazonaws.com/Profile_avatar_placeholder_large.png";
             }}
           />
           <div>
