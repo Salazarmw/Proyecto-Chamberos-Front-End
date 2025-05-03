@@ -260,27 +260,19 @@ export default function UpdateProfileInformationForm({ user, tags, onUpdate }) {
           <div className="relative">
             {user && user.profile_photo ? (
               <img
-                src={`${
-                  process.env.REACT_APP_API_URL || "http://localhost:5000"
-                }/uploads/profile-photos/${user.profile_photo}`}
+                src={user.profile_photo}
                 alt="Profile Photo"
                 className="rounded-full h-32 w-32 object-cover border-4 border-indigo-500 dark:border-indigo-400"
                 onError={(e) => {
-                  console.log(
-                    "Error loading profile photo, falling back to default"
-                  );
+                  console.log("Error loading profile photo, falling back to default");
                   e.target.onerror = null;
-                  e.target.src = `${
-                    process.env.REACT_APP_API_URL || "http://localhost:5000"
-                  }/uploads/profile-photos/DefaultImage.jpeg`;
+                  e.target.src = "https://chambero-profile-bucket.s3.us-east-2.amazonaws.com/Profile_avatar_placeholder_large.png";
                 }}
               />
             ) : (
               <div className="rounded-full h-32 w-32 bg-gray-200 dark:bg-gray-700 flex items-center justify-center border-4 border-indigo-500 dark:border-indigo-400">
                 <img
-                  src={`${
-                    process.env.REACT_APP_API_URL || "http://localhost:5000"
-                  }/uploads/profile-photos/DefaultImage.jpeg`}
+                  src="https://chambero-profile-bucket.s3.us-east-2.amazonaws.com/Profile_avatar_placeholder_large.png"
                   alt="Default Profile"
                   className="h-32 w-32 object-cover rounded-full"
                   onError={(e) => {

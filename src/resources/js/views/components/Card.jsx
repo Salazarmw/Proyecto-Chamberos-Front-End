@@ -15,13 +15,13 @@ export default function Card({ user }) {
         <div className="w-32 h-32 rounded-full border-4 border-indigo-600 dark:border-indigo-400 overflow-hidden shadow-lg">
           {user.profile_photo ? (
             <img
-              src={`/storage/${user.profile_photo}`}
+              src={user.profile_photo}
               alt={`${user.name} ${user.lastname}`}
               className="w-full h-full object-cover"
             />
           ) : (
             <img
-              src="/storage/profile-photos/DefaultImage.jpeg"
+              src="https://chambero-profile-bucket.s3.us-east-2.amazonaws.com/Profile_avatar_placeholder_large.png"
               alt="Imagen por defecto"
               className="w-full h-full object-cover"
             />

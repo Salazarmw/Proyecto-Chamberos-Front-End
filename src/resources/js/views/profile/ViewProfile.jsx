@@ -59,8 +59,8 @@ const ViewProfile = () => {
             <img
               src={
                 user.profile_photo
-                  ? `/storage/${user.profile_photo}`
-                  : "/storage/profile-photos/DefaultImage.jpeg"
+                  ? user.profile_photo
+                  : "https://chambero-profile-bucket.s3.us-east-2.amazonaws.com/Profile_avatar_placeholder_large.png"
               }
               alt="Profile Photo"
               className="w-24 h-24 rounded-full border-4 border-white dark:border-gray-800 object-cover"
