@@ -6,6 +6,7 @@ import InputError from "../components/InputError";
 import DropdownRegister from "../components/DropdownRegister";
 import DateInput from "../components/DateInput";
 import PrimaryButton from "../components/PrimaryButton";
+import PhoneInputCR from "../components/PhoneInputCR";
 import {
   fetchProvinces,
   fetchCantons,
@@ -32,6 +33,32 @@ export default function Register() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
+
+  // Function to check if user is at least 18 years old
+  const isAdult = (birthDate) => {
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    
+    return age >= 18;
+  };
+
+  // Function to validate phone number
+  const validatePhone = async (phone) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/auth/check-phone/${phone}`);
+      const data = await response.json();
+      return !data.exists; // Returns true if phone is available
+    } catch (error) {
+      console.error("Error checking phone:", error);
+      return false;
+    }
+  };
 
   useEffect(() => {
     const loadProvinces = async () => {
@@ -69,6 +96,21 @@ export default function Register() {
     setLoading(true);
     setError(null);
     setErrors({});
+
+    // Validate age
+    if (!isAdult(formData.birth_date)) {
+      setErrors({ birth_date: "Debes ser mayor de 18 años para registrarte" });
+      setLoading(false);
+      return;
+    }
+
+    // Validate phone number
+    const isPhoneAvailable = await validatePhone(formData.phone);
+    if (!isPhoneAvailable) {
+      setErrors({ phone: "Este número de teléfono ya está registrado" });
+      setLoading(false);
+      return;
+    }
 
     if (formData.password !== formData.password_confirmation) {
       setErrors({ password_confirmation: "Las contraseñas no coinciden" });
@@ -177,16 +219,11 @@ export default function Register() {
 
       {/* Phone */}
       <div className="mt-4">
-        <InputLabel htmlFor="phone" value="Phone" />
-        <TextInput
-          id="phone"
-          name="phone"
+        <PhoneInputCR
           value={formData.phone}
-          className="block mt-1 w-full"
-          autoComplete="tel"
-          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+          onChange={(phone) => setFormData({ ...formData, phone: phone })}
+          error={errors.phone}
         />
-        {errors.phone && <InputError message={errors.phone} className="mt-2" />}
       </div>
 
       {/* Province */}
