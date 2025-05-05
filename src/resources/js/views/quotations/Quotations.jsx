@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "../../config/axios";
 import { AuthContext } from "../../../../context/AuthContext";
+import DetailsModal from "../components/DetailsModal";
 
 const Quotations = () => {
   const [quotations, setQuotations] = useState([]);
@@ -10,6 +11,8 @@ const Quotations = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalQuotation, setModalQuotation] = useState(null);
 
   useEffect(() => {
     if (user) {
@@ -68,6 +71,11 @@ const Quotations = () => {
       console.error("Error handling action:", error);
       setError(error.response?.data?.message || "Error al procesar la acción. Por favor, intente nuevamente.");
     }
+  };
+
+  const handleShowDetails = (quotation) => {
+    setModalQuotation(quotation);
+    setModalOpen(true);
   };
 
   const formatMoney = (amount) => {
@@ -228,6 +236,12 @@ const Quotations = () => {
                   Precio
                 </th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-200">
+                  Cliente
+                </th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-200">
+                  Chambero
+                </th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-200">
                   Estado
                 </th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-200">
@@ -250,6 +264,12 @@ const Quotations = () => {
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-200">
                       {formatMoney(quotation.price)}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-200">
+                      {quotation.client_id?.name || "N/A"}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-200">
+                      {quotation.chambero_id?.name || "N/A"}
                     </td>
                     <td className="px-4 py-3 text-sm font-medium capitalize">
                       <span className={getStatusColor(quotation.status)}>
@@ -296,6 +316,12 @@ const Quotations = () => {
                           >
                             Rechazar
                           </button>
+                          <button
+                            onClick={() => handleShowDetails(quotation)}
+                            className="bg-blue-500 hover:bg-blue-600 text-white text-sm px-3 py-1 rounded"
+                          >
+                            Ver detalles
+                          </button>
                         </div>
                       )}
                     </td>
@@ -315,6 +341,33 @@ const Quotations = () => {
           </table>
         </div>
       </div>
+      {/* Modal de detalles */}
+      <DetailsModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title="Detalles de la Oferta y Contraoferta"
+      >
+        {modalQuotation && (
+          <div className="space-y-4">
+            <div>
+              <h3 className="font-semibold text-gray-800 dark:text-gray-100 mb-1">Oferta Inicial</h3>
+              <div className="text-sm text-gray-700 dark:text-gray-300">
+                <p><strong>Descripción:</strong> {modalQuotation.original_service_description || modalQuotation.service_description}</p>
+                <p><strong>Fecha:</strong> {modalQuotation.original_scheduled_date ? new Date(modalQuotation.original_scheduled_date).toLocaleDateString("es-CR") : new Date(modalQuotation.scheduled_date).toLocaleDateString("es-CR")}</p>
+                <p><strong>Precio:</strong> ₡{modalQuotation.original_price ? Number(modalQuotation.original_price).toLocaleString("es-CR") : Number(modalQuotation.price).toLocaleString("es-CR")}</p>
+              </div>
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-800 dark:text-gray-100 mb-1">Contraoferta</h3>
+              <div className="text-sm text-gray-700 dark:text-gray-300">
+                <p><strong>Nota:</strong> {modalQuotation.service_description}</p>
+                <p><strong>Fecha:</strong> {new Date(modalQuotation.scheduled_date).toLocaleDateString("es-CR")}</p>
+                <p><strong>Precio:</strong> ₡{Number(modalQuotation.price).toLocaleString("es-CR")}</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </DetailsModal>
     </div>
   );
 };

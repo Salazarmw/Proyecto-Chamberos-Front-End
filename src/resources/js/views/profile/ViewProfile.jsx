@@ -18,7 +18,7 @@ const ViewProfile = () => {
         setLoading(false);
       } catch (error) {
         console.error("Error fetching user data:", error);
-        setError(error.response?.data?.message || "Error al cargar los datos del usuario");
+        setError("No se encontró el perfil del usuario.");
         setLoading(false);
       }
     };
@@ -37,6 +37,7 @@ const ViewProfile = () => {
   if (error) {
     return (
       <div className="p-4 text-center text-red-600">
+        <h1 className="text-3xl font-bold mb-4">404</h1>
         <p>{error}</p>
       </div>
     );
