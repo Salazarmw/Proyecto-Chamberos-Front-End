@@ -154,6 +154,7 @@ export default function ChamberoRegister() {
         password_confirmation: "",
         tags: [],
       });
+      navigate('/login');
     } catch (error) {
       console.error("Error en el registro:", error);
 

@@ -15,6 +15,7 @@ import Login from "./resources/js/views/auth/Login";
 import Register from "./resources/js/views/auth/Register";
 import ChamberoRegister from "./resources/js/views/auth/ChamberoRegister";
 import VerifyEmail from "./resources/js/views/auth/VerifyEmail";
+import ResendVerification from "./resources/js/views/auth/ResendVerification";
 import Dashboard from "./resources/js/views/Dashboard";
 import EditProfile from "./resources/js/views/profile/EditProfile";
 import ViewProfile from "./resources/js/views/profile/ViewProfile";
@@ -61,6 +62,14 @@ function App() {
               element={
                 <GuestLayout>
                   <VerifyEmail />
+                </GuestLayout>
+              }
+            />
+            <Route
+              path="/resend-verification"
+              element={
+                <GuestLayout>
+                  <ResendVerification />
                 </GuestLayout>
               }
             />
