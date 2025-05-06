@@ -99,8 +99,8 @@ const ViewProfile = () => {
             <div className="absolute -bottom-12 left-8">
               <img
                 src={
-                  user.profile_photo
-                    ? user.profile_photo
+                  userData.profile_photo
+                    ? userData.profile_photo
                     : "https://chambero-profile-bucket.s3.us-east-2.amazonaws.com/Profile_avatar_placeholder_large.png"
                 }
                 alt="Profile Photo"
@@ -114,12 +114,14 @@ const ViewProfile = () => {
             <div className="flex justify-between items-start">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {user.name} {user.lastname}
+                  {userData.name} {userData.lastname}
                 </h1>
-                <p className="text-gray-600 dark:text-gray-400">{user.email}</p>
+                <p className="text-gray-600 dark:text-gray-400">
+                  {userData.email}
+                </p>
               </div>
               <Link
-                to={`/quotations/create/${user._id}`}
+                to={`/quotations/create/${userData._id}`}
                 className="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700 transition-colors"
               >
                 Cotizar
@@ -135,13 +137,13 @@ const ViewProfile = () => {
                 <div className="space-y-3">
                   <p className="flex items-center text-gray-600 dark:text-gray-400">
                     <i className="fas fa-phone mr-2"></i>
-                    {user.phone || "No disponible"}
+                    {userData.phone || "No disponible"}
                   </p>
                   <p className="flex items-center text-gray-600 dark:text-gray-400">
                     <i className="fas fa-map-marker-alt mr-2"></i>
-                    {user.address || "No disponible"}
-                    {user.canton && `, ${user.canton}`}
-                    {user.province && `, ${user.province}`}
+                    {userData.address || "No disponible"}
+                    {userData.canton && `, ${userData.canton}`}
+                    {userData.province && `, ${userData.province}`}
                   </p>
                 </div>
               </div>
@@ -152,8 +154,8 @@ const ViewProfile = () => {
                   Servicios
                 </h2>
                 <div className="flex flex-wrap gap-2">
-                  {user.tags && user.tags.length > 0 ? (
-                    user.tags.map((tag) => (
+                  {userData.tags && userData.tags.length > 0 ? (
+                    userData.tags.map((tag) => (
                       <span
                         key={tag._id}
                         className="bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 px-3 py-1 rounded-full text-sm"
@@ -173,12 +175,12 @@ const ViewProfile = () => {
         </div>
 
         {/* Galería de trabajos (solo para chamberos) */}
-        {user.user_type === "chambero" && (
+        {userData && userData.user_type === "chambero" && (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
               Galería de Trabajos
             </h2>
-            <WorkGallery userId={user._id} isOwner={false} />
+            <WorkGallery userId={userData._id} isOwner={false} />
           </div>
         )}
         {/* Servicios */}
