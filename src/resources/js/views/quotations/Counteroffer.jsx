@@ -130,19 +130,35 @@ const Counteroffer = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label
+              htmlFor="original_service_description"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Descripción original del servicio
+            </label>
+            <textarea
+              id="original_service_description"
+              className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400"
+              rows="3"
+              value={quotation.service_description}
+              readOnly
+            />
+          </div>
+
+          <div>
+            <label
               htmlFor="service_description"
               className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
             >
-              Descripción del Servicio
+              Nota de la contraoferta
             </label>
             <textarea
               id="service_description"
               name="service_description"
               className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-600 focus:border-transparent dark:bg-gray-700 dark:text-gray-200"
-              rows="4"
+              rows="3"
               value={formData.service_description}
               onChange={handleChange}
-              required
+              placeholder="Agrega una nota para el cliente (opcional)"
             />
           </div>
 

@@ -56,7 +56,7 @@ const CreateQuotation = () => {
     try {
       const price = parseInt(formData.price.replace(/,/g, ""));
       const quotationData = {
-        client_id: user.id,
+        client_id: user._id,
         chambero_id: chamberoId,
         service_description: formData.service_description,
         scheduled_date: formData.scheduled_date,

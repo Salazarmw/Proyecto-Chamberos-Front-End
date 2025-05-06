@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "../../config/axios";
 import { AuthContext } from "../../../../context/AuthContext";
+import DetailsModal from "../components/DetailsModal";
 
 const Jobs = () => {
   const [jobs, setJobs] = useState([]);
@@ -10,6 +11,8 @@ const Jobs = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalQuotation, setModalQuotation] = useState(null);
 
   useEffect(() => {
     if (user) {
@@ -95,6 +98,11 @@ const Jobs = () => {
       default:
         return "text-gray-600 dark:text-gray-400";
     }
+  };
+
+  const handleShowDetails = (quotation) => {
+    setModalQuotation(quotation);
+    setModalOpen(true);
   };
 
   if (loading) {
@@ -206,7 +214,7 @@ const Jobs = () => {
                       </td>
                       <td className="px-4 py-3">
                         {job.status === "in_progress" && (
-                          <div className="flex flex-wrap gap-2">
+                          <div className="flex flex-wrap gap-2 flex-row-reverse justify-end items-center">
                             {/* Mostrar el estado de aprobación */}
                             <div className="text-sm text-gray-600 dark:text-gray-400">
                               {user.user_type === "client" ? (
@@ -215,7 +223,15 @@ const Jobs = () => {
                                 job.chambero_ok ? "✓ Aprobado" : "Pendiente de tu aprobación"
                               )}
                             </div>
-                            
+                            {/* Botón ver detalles de la quotation */}
+                            {job.quotation_id && (
+                              <button
+                                onClick={() => handleShowDetails(job.quotation_id)}
+                                className="bg-blue-500 hover:bg-blue-600 text-white text-sm px-3 py-1 rounded"
+                              >
+                                Ver detalles
+                              </button>
+                            )}
                             {/* Botón de aprobar si aún no ha aprobado */}
                             {((user.user_type === "client" && !job.client_ok) ||
                               (user.user_type === "chambero" && !job.chambero_ok)) && (
@@ -246,6 +262,33 @@ const Jobs = () => {
           </div>
         </div>
       </div>
+      {/* Modal de detalles */}
+      <DetailsModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title="Detalles de la Oferta y Contraoferta"
+      >
+        {modalQuotation && (
+          <div className="space-y-4">
+            <div>
+              <h3 className="font-semibold text-gray-800 dark:text-gray-100 mb-1">Oferta Inicial</h3>
+              <div className="text-sm text-gray-700 dark:text-gray-300">
+                <p><strong>Descripción:</strong> {modalQuotation.original_service_description || modalQuotation.service_description}</p>
+                <p><strong>Fecha:</strong> {modalQuotation.original_scheduled_date ? new Date(modalQuotation.original_scheduled_date).toLocaleDateString("es-CR") : new Date(modalQuotation.scheduled_date).toLocaleDateString("es-CR")}</p>
+                <p><strong>Precio:</strong> ₡{modalQuotation.original_price ? Number(modalQuotation.original_price).toLocaleString("es-CR") : Number(modalQuotation.price).toLocaleString("es-CR")}</p>
+              </div>
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-800 dark:text-gray-100 mb-1">Contraoferta</h3>
+              <div className="text-sm text-gray-700 dark:text-gray-300">
+                <p><strong>Nota:</strong> {modalQuotation.service_description}</p>
+                <p><strong>Fecha:</strong> {new Date(modalQuotation.scheduled_date).toLocaleDateString("es-CR")}</p>
+                <p><strong>Precio:</strong> ₡{Number(modalQuotation.price).toLocaleString("es-CR")}</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </DetailsModal>
     </div>
   );
 };
