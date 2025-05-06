@@ -82,10 +82,6 @@ function App() {
                 </GuestLayout>
               }
             />
-          </Route>
-
-          {/* Rutas protegidas */}
-          <Route element={<ProtectedRoute />}>
             <Route
               path="/dashboard"
               element={
@@ -95,18 +91,22 @@ function App() {
               }
             />
             <Route
-              path="/profile/edit"
-              element={
-                <AppLayout>
-                  <EditProfile />
-                </AppLayout>
-              }
-            />
-            <Route
               path="/profile/:id"
               element={
                 <AppLayout>
                   <ViewProfile />
+                </AppLayout>
+              }
+            />
+          </Route>
+
+          {/* Rutas protegidas */}
+          <Route element={<ProtectedRoute />}>
+            <Route
+              path="/profile/edit"
+              element={
+                <AppLayout>
+                  <EditProfile />
                 </AppLayout>
               }
             />
