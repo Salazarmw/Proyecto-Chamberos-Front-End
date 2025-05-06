@@ -3,6 +3,7 @@ import axios from "../../config/axios";
 import UpdateProfileInformationForm from "./partials/UpdateProfileInformationForm";
 import UpdatePasswordForm from "./partials/UpdatePasswordForm";
 import DeleteUserForm from "./partials/DeleteUserForm";
+import WorkGallery from "../../components/WorkGallery";
 import { AuthContext } from "../../../../context/AuthContext";
 
 export default function EditProfile() {
@@ -76,6 +77,18 @@ export default function EditProfile() {
             <UpdatePasswordForm />
           </div>
         </div>
+
+        {/* Galería de trabajos (solo para chamberos) */}
+        {user?.user_type === "chambero" && (
+          <div className="p-4 sm:p-8 bg-white dark:bg-gray-800 shadow sm:rounded-lg">
+            <div className="max-w-4xl">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+                Galería de Trabajos
+              </h2>
+              <WorkGallery userId={user._id} isOwner={true} />
+            </div>
+          </div>
+        )}
 
         <div className="p-4 sm:p-8 bg-white dark:bg-gray-800 shadow sm:rounded-lg">
           <div className="max-w-xl">
