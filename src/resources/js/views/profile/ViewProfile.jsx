@@ -1,11 +1,14 @@
-import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useState, useEffect, useContext } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import axios from "../../config/axios";
 import WorkGallery from "../../components/WorkGallery";
+import { AuthContext } from "../../../../context/AuthContext";
 
 const ViewProfile = () => {
   const { id } = useParams();
-  const [user, setUser] = useState(null);
+  const { user } = useContext(AuthContext);
+  const navigate = useNavigate();
+  const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -15,7 +18,7 @@ const ViewProfile = () => {
         const response = await axios.get(`/api/users/${id}`);
         console.log("User data:", response.data);
         
-        setUser(response.data);
+        setUserData(response.data);
         setLoading(false);
       } catch (error) {
         console.error("Error fetching user data:", error);
@@ -26,6 +29,17 @@ const ViewProfile = () => {
 
     fetchUserData();
   }, [id]);
+
+  const handleProtectedAction = (action) => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    // Handle the action if user is authenticated
+    if (action === 'quote') {
+      navigate(`/quotations/create/${id}`);
+    }
+  };
 
   if (loading) {
     return (
@@ -44,7 +58,7 @@ const ViewProfile = () => {
     );
   }
 
-  if (!user) {
+  if (!userData) {
     return (
       <div className="p-4 text-center text-gray-600">
         <p>No se encontró el perfil del usuario.</p>
