@@ -14,6 +14,8 @@ const ViewProfile = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [reviews, setReviews] = useState([]);
+  const [provinceName, setProvinceName] = useState("");
+  const [cantonName, setCantonName] = useState("");
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -33,6 +35,31 @@ const ViewProfile = () => {
     fetchUserData();
   }, [id]);
 
+  // Fetch province and canton names when userData is loaded
+  useEffect(() => {
+    const fetchProvinceAndCanton = async () => {
+      if (userData) {
+        if (userData.province) {
+          try {
+            const res = await axios.get(`/api/provinces/${userData.province}`);
+            setProvinceName(res.data.name || "");
+          } catch {
+            setProvinceName("");
+          }
+        }
+        if (userData.canton) {
+          try {
+            const res = await axios.get(`/api/cantons/${userData.canton}`);
+            setCantonName(res.data.name || "");
+          } catch {
+            setCantonName("");
+          }
+        }
+      }
+    };
+    fetchProvinceAndCanton();
+  }, [userData]);
+
   const handleProtectedAction = (action) => {
     if (!user) {
       navigate("/login");
@@ -47,18 +74,56 @@ const ViewProfile = () => {
   useEffect(() => {
     const fetchReviews = async () => {
       try {
-        const query = `query Reviews($userId: ID!) { reviews { id rating comment createdAt user { id name profile_photo } chambero { id user { id } } } }`;
+        const query = `
+          query GetReviews($chamberoId: ID!) {
+            reviews(chamberoId: $chamberoId) {
+              id
+              rating
+              comment
+              createdAt
+              user {
+                id
+                name
+                profile_photo
+              }
+            }
+          }
+        `;
         const res = await fetch(GRAPHQL_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query, variables: { userId: id } }),
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({
+            query,
+            variables: { chamberoId: id },
+          }),
         });
         const { data } = await res.json();
-        // Filtrar reviews que sean para este usuario
-        const filtered = data.reviews.filter((r) => r.chambero.user.id === id);
-        setReviews(filtered);
+        if (data && data.reviews && data.reviews.length > 0) {
+          setReviews(data.reviews);
+        } else {
+          // Si GraphQL no devuelve reviews, usar la REST API
+          const restRes = await axios.get(`/api/reviews/user/${id}`);
+          if (restRes.data && restRes.data.reviews) {
+            // Adaptar formato para que coincida con el renderizado
+            const adapted = restRes.data.reviews.map((r) => ({
+              id: r._id,
+              rating: r.rating,
+              comment: r.comment,
+              createdAt: r.created_at,
+              user: {
+                id: r.fromUser._id || r.fromUser,
+                name: r.fromUser.name || "Usuario",
+                profile_photo: r.fromUser.profile_photo || null,
+              },
+            }));
+            setReviews(adapted);
+          }
+        }
       } catch (err) {
-        // No bloquear la vista si falla
+        console.error("Error fetching reviews:", err);
       }
     };
     fetchReviews();
@@ -142,8 +207,8 @@ const ViewProfile = () => {
                   <p className="flex items-center text-gray-600 dark:text-gray-400">
                     <i className="fas fa-map-marker-alt mr-2"></i>
                     {userData.address || "No disponible"}
-                    {userData.canton && `, ${userData.canton}`}
-                    {userData.province && `, ${userData.province}`}
+                    {cantonName && `, ${cantonName}`}
+                    {provinceName && `, ${provinceName}`}
                   </p>
                 </div>
               </div>
@@ -173,7 +238,6 @@ const ViewProfile = () => {
             </div>
           </div>
         </div>
-
         {/* Galería de trabajos (solo para chamberos) */}
         {userData && userData.user_type === "chambero" && (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
@@ -183,75 +247,67 @@ const ViewProfile = () => {
             <WorkGallery userId={userData._id} isOwner={false} />
           </div>
         )}
-        {/* Servicios */}
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Servicios
+        {/* Reviews */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mt-6">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+            Reseñas
           </h2>
-          <div className="flex flex-wrap gap-2">
-            {userData.tags && userData.tags.length > 0 ? (
-              userData.tags.map((tag) => (
-                <span
-                  key={tag._id}
-                  className="bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 px-3 py-1 rounded-full text-sm"
+          {reviews.length === 0 ? (
+            <p className="text-gray-600 dark:text-gray-400 text-center py-4">
+              No hay reseñas para este usuario.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {reviews.map((review) => (
+                <div
+                  key={review.id}
+                  className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 hover:shadow-lg transition-shadow duration-200"
                 >
-                  {tag.name}
-                </span>
-              ))
-            ) : (
-              <p className="text-gray-600 dark:text-gray-400">
-                No hay servicios disponibles
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Reviews */}
-      <div className="mt-10">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Reseñas
-        </h2>
-        {reviews.length === 0 ? (
-          <p className="text-gray-600 dark:text-gray-400">
-            No hay reseñas para este usuario.
-          </p>
-        ) : (
-          <div className="space-y-4">
-            {reviews.map((review) => (
-              <div
-                key={review.id}
-                className="flex items-start gap-4 bg-gray-100 dark:bg-gray-700 rounded-lg p-4"
-              >
-                <img
-                  src={
-                    review.user.profile_photo
-                      ? review.user.profile_photo
-                      : "/DefaultImage.jpeg"
-                  }
-                  alt="Foto de usuario"
-                  className="w-12 h-12 rounded-full object-cover"
-                />
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-gray-800 dark:text-gray-200">
-                      {review.user.name}
-                    </span>
-                    <span className="text-yellow-500">
-                      {"★".repeat(review.rating)}
-                    </span>
+                  <div className="flex items-center space-x-3 mb-3">
+                    <img
+                      src={
+                        review.user.profile_photo
+                          ? review.user.profile_photo
+                          : "https://chambero-profile-bucket.s3.us-east-2.amazonaws.com/Profile_avatar_placeholder_large.png"
+                      }
+                      alt={`${review.user.name}'s profile`}
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                    <div>
+                      <h3 className="font-semibold text-gray-900 dark:text-white">
+                        {review.user.name}
+                      </h3>
+                      <div className="flex items-center">
+                        {[...Array(5)].map((_, index) => (
+                          <span
+                            key={index}
+                            className={`text-lg ${
+                              index < review.rating
+                                ? "text-yellow-400"
+                                : "text-gray-300 dark:text-gray-600"
+                            }`}
+                          >
+                            ★
+                          </span>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-gray-700 dark:text-gray-300 mt-1">
+                  <p className="text-gray-700 dark:text-gray-300 text-sm mb-2">
                     {review.comment}
                   </p>
-                  <span className="text-xs text-gray-500">
-                    {new Date(review.createdAt).toLocaleDateString()}
-                  </span>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {new Date(review.createdAt).toLocaleDateString("es-ES", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </p>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

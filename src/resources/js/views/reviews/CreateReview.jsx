@@ -70,17 +70,23 @@ const CreateReview = () => {
     }
 
     try {
-      await axios.post("/api/reviews", {
+      const response = await axios.post("/api/reviews", {
         jobId,
         rating,
         comment,
         fromUser: job.client_id?._id || job.client_id,
-        toUser: job.chambero_id?._id || job.chambero_id
+        toUser: job.chambero_id?._id || job.chambero_id,
       });
 
-      navigate("/jobs");
+      console.log("Review creada exitosamente:", response.data);
+
+      // Mostrar mensaje de éxito
+      alert("¡Gracias por tu reseña! Será publicada en breve.");
+
+      // Redirigir al dashboard
+      navigate("/dashboard");
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Error al crear la review:", error);
       setError(error.response?.data?.message || "Error al guardar la review");
     }
   };
