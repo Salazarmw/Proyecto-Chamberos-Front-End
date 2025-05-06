@@ -3,6 +3,8 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import axios from "../../config/axios";
 import { AuthContext } from "../../../../context/AuthContext";
 
+const GRAPHQL_URL = "http://localhost:4000/graphql";
+
 const ViewProfile = () => {
   const { id } = useParams();
   const { user } = useContext(AuthContext);
@@ -10,13 +12,14 @@ const ViewProfile = () => {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [reviews, setReviews] = useState([]);
 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
         const response = await axios.get(`/api/users/${id}`);
         console.log("User data:", response.data);
-        
+
         setUserData(response.data);
         setLoading(false);
       } catch (error) {
@@ -29,13 +32,33 @@ const ViewProfile = () => {
     fetchUserData();
   }, [id]);
 
+  useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        const query = `query Reviews($userId: ID!) { reviews { id rating comment createdAt user { id name profile_photo } chambero { id user { id } } } }`;
+        const res = await fetch(GRAPHQL_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query, variables: { userId: id } }),
+        });
+        const { data } = await res.json();
+        // Filtrar reviews que sean para este usuario
+        const filtered = data.reviews.filter((r) => r.chambero.user.id === id);
+        setReviews(filtered);
+      } catch (err) {
+        // No bloquear la vista si falla
+      }
+    };
+    fetchReviews();
+  }, [id]);
+
   const handleProtectedAction = (action) => {
     if (!user) {
-      navigate('/login');
+      navigate("/login");
       return;
     }
     // Handle the action if user is authenticated
-    if (action === 'quote') {
+    if (action === "quote") {
       navigate(`/quotations/create/${id}`);
     }
   };
@@ -90,10 +113,12 @@ const ViewProfile = () => {
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                 {userData.name} {userData.lastname}
               </h1>
-              <p className="text-gray-600 dark:text-gray-400">{userData.email}</p>
+              <p className="text-gray-600 dark:text-gray-400">
+                {userData.email}
+              </p>
             </div>
             <button
-              onClick={() => handleProtectedAction('quote')}
+              onClick={() => handleProtectedAction("quote")}
               className="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700 transition-colors"
             >
               Cotizar
@@ -142,6 +167,53 @@ const ViewProfile = () => {
                 )}
               </div>
             </div>
+          </div>
+
+          {/* Reviews */}
+          <div className="mt-10">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Reseñas
+            </h2>
+            {reviews.length === 0 ? (
+              <p className="text-gray-600 dark:text-gray-400">
+                No hay reseñas para este usuario.
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {reviews.map((review) => (
+                  <div
+                    key={review.id}
+                    className="flex items-start gap-4 bg-gray-100 dark:bg-gray-700 rounded-lg p-4"
+                  >
+                    <img
+                      src={
+                        review.user.profile_photo
+                          ? review.user.profile_photo
+                          : "/DefaultImage.jpeg"
+                      }
+                      alt="Foto de usuario"
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-gray-800 dark:text-gray-200">
+                          {review.user.name}
+                        </span>
+                        <span className="text-yellow-500">
+                          {"★".repeat(review.rating)}
+                        </span>
+                      </div>
+                      <p className="text-gray-700 dark:text-gray-300 mt-1">
+                        {review.comment}
+                      </p>
+                      <span className="text-xs text-gray-500">
+                        {new Date(review.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
