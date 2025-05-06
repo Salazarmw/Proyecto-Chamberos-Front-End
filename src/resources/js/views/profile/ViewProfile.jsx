@@ -1,10 +1,13 @@
-import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useState, useEffect, useContext } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import axios from "../../config/axios";
+import { AuthContext } from "../../../../context/AuthContext";
 
 const ViewProfile = () => {
   const { id } = useParams();
-  const [user, setUser] = useState(null);
+  const { user } = useContext(AuthContext);
+  const navigate = useNavigate();
+  const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -14,7 +17,7 @@ const ViewProfile = () => {
         const response = await axios.get(`/api/users/${id}`);
         console.log("User data:", response.data);
         
-        setUser(response.data);
+        setUserData(response.data);
         setLoading(false);
       } catch (error) {
         console.error("Error fetching user data:", error);
@@ -25,6 +28,17 @@ const ViewProfile = () => {
 
     fetchUserData();
   }, [id]);
+
+  const handleProtectedAction = (action) => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    // Handle the action if user is authenticated
+    if (action === 'quote') {
+      navigate(`/quotations/create/${id}`);
+    }
+  };
 
   if (loading) {
     return (
@@ -43,7 +57,7 @@ const ViewProfile = () => {
     );
   }
 
-  if (!user) {
+  if (!userData) {
     return (
       <div className="p-4 text-center text-gray-600">
         <p>No se encontró el perfil del usuario.</p>
@@ -59,8 +73,8 @@ const ViewProfile = () => {
           <div className="absolute -bottom-12 left-8">
             <img
               src={
-                user.profile_photo
-                  ? user.profile_photo
+                userData.profile_photo
+                  ? userData.profile_photo
                   : "https://chambero-profile-bucket.s3.us-east-2.amazonaws.com/Profile_avatar_placeholder_large.png"
               }
               alt="Profile Photo"
@@ -74,16 +88,16 @@ const ViewProfile = () => {
           <div className="flex justify-between items-start">
             <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                {user.name} {user.lastname}
+                {userData.name} {userData.lastname}
               </h1>
-              <p className="text-gray-600 dark:text-gray-400">{user.email}</p>
+              <p className="text-gray-600 dark:text-gray-400">{userData.email}</p>
             </div>
-            <Link
-              to={`/quotations/create/${user._id}`}
+            <button
+              onClick={() => handleProtectedAction('quote')}
               className="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700 transition-colors"
             >
               Cotizar
-            </Link>
+            </button>
           </div>
 
           {/* Información de contacto */}
@@ -95,13 +109,13 @@ const ViewProfile = () => {
               <div className="space-y-3">
                 <p className="flex items-center text-gray-600 dark:text-gray-400">
                   <i className="fas fa-phone mr-2"></i>
-                  {user.phone || "No disponible"}
+                  {userData.phone || "No disponible"}
                 </p>
                 <p className="flex items-center text-gray-600 dark:text-gray-400">
                   <i className="fas fa-map-marker-alt mr-2"></i>
-                  {user.address || "No disponible"}
-                  {user.canton && `, ${user.canton}`}
-                  {user.province && `, ${user.province}`}
+                  {userData.address || "No disponible"}
+                  {userData.canton && `, ${userData.canton}`}
+                  {userData.province && `, ${userData.province}`}
                 </p>
               </div>
             </div>
@@ -112,8 +126,8 @@ const ViewProfile = () => {
                 Servicios
               </h2>
               <div className="flex flex-wrap gap-2">
-                {user.tags && user.tags.length > 0 ? (
-                  user.tags.map((tag) => (
+                {userData.tags && userData.tags.length > 0 ? (
+                  userData.tags.map((tag) => (
                     <span
                       key={tag._id}
                       className="bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 px-3 py-1 rounded-full text-sm"
