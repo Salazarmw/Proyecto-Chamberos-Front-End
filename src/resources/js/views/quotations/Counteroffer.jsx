@@ -15,6 +15,13 @@ const Counteroffer = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    if (!id) {
+      console.error("Quotation ID is undefined");
+      setError("No se pudo identificar la cotización seleccionada.");
+      setLoading(false);
+      return;
+    }
+
     const fetchQuotation = async () => {
       try {
         const response = await axios.get(`/api/quotations/${id}`);
@@ -37,12 +44,7 @@ const Counteroffer = () => {
       }
     };
 
-    if (id) {
-      fetchQuotation();
-    } else {
-      setError("ID de cotización no válido");
-      setLoading(false);
-    }
+    fetchQuotation();
   }, [id]);
 
   const handleChange = (e) => {

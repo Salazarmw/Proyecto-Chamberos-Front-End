@@ -17,39 +17,27 @@ export default function Dashboard() {
   const [cantons, setCantons] = useState([]);
   const [selectedTags, setSelectedTags] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [provinceNames, setProvinceNames] = useState({});
-  const [cantonNames, setCantonNames] = useState({});
   const [filteredUsers, setFilteredUsers] = useState([]);
 
-  // Fetch initial data
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        // Fetch provinces
         const provincesResponse = await axios.get("/api/provinces");
         setProvinces(provincesResponse.data);
 
-        // Create a map of province IDs to names
-        const provinceMap = {};
-        provincesResponse.data.forEach((province) => {
-          provinceMap[province._id] = province.name;
-        });
-        setProvinceNames(provinceMap);
-
-        // Fetch tags
         const tagsResponse = await axios.get("/api/tags");
         setTags(tagsResponse.data);
 
-        // Fetch users
         const usersResponse = await axios.get("/api/users", {
           params: {
-            populate: "tags"
-          }
+            populate: "tags",
+          },
         });
-        
-        // Filter only chambero type users
-        const chamberos = usersResponse.data.filter(user => user.user_type === "chambero");
-        
+
+        const chamberos = usersResponse.data.filter(
+          (user) => user.user_type === "chambero"
+        );
+
         setUsers(chamberos);
         setInitialUsers(chamberos);
         setFilteredUsers(chamberos);
@@ -64,7 +52,6 @@ export default function Dashboard() {
     fetchInitialData();
   }, []);
 
-  // Handle province change
   const handleProvinceChange = async (e) => {
     const provinceId = e.target.value;
     setSelectedProvince(provinceId);
@@ -77,15 +64,7 @@ export default function Dashboard() {
         );
         setCantons(cantonsResponse.data);
 
-        // Create a map of canton IDs to names
-        const cantonMap = {};
-        cantonsResponse.data.forEach((canton) => {
-          cantonMap[canton._id] = canton.name;
-        });
-        setCantonNames(cantonMap);
-
-        // Update filtered users
-        const filtered = users.filter(user => user.province === provinceId);
+        const filtered = users.filter((user) => user.province === provinceId);
         setFilteredUsers(filtered);
       } catch (error) {
         console.error("Error fetching cantons:", error);
@@ -97,27 +76,24 @@ export default function Dashboard() {
     }
   };
 
-  // Handle canton change
   const handleCantonChange = (e) => {
     const cantonId = e.target.value;
     setSelectedCanton(cantonId);
 
     if (cantonId) {
-      const filtered = users.filter(user => user.canton === cantonId);
+      const filtered = users.filter((user) => user.canton === cantonId);
       setFilteredUsers(filtered);
     } else {
-      const filtered = users.filter(user => user.province === selectedProvince);
+      const filtered = users.filter((user) => user.province === selectedProvince);
       setFilteredUsers(filtered);
     }
   };
 
-  // Handle real-time search
   const handleSearch = (e) => {
     const query = e.target.value.toLowerCase();
     setSearchQuery(query);
   };
 
-  // Handling tag changes
   const handleTagFilter = (tagId) => {
     setSelectedTags((prev) => {
       const newTags = prev.includes(tagId)
@@ -127,21 +103,17 @@ export default function Dashboard() {
     });
   };
 
-  // Apply filters
   useEffect(() => {
     let filtered = [...users];
 
-    // Filter by province
     if (selectedProvince) {
       filtered = filtered.filter((user) => user.province === selectedProvince);
     }
 
-    // Filter by canton
     if (selectedCanton) {
       filtered = filtered.filter((user) => user.canton === selectedCanton);
     }
 
-    // Filter by tags
     if (selectedTags.length > 0) {
       filtered = filtered.filter((user) =>
         selectedTags.every((tagId) =>
@@ -150,7 +122,6 @@ export default function Dashboard() {
       );
     }
 
-    // Filter by tag search
     if (searchQuery) {
       filtered = filtered.filter(
         (user) =>
@@ -172,7 +143,6 @@ export default function Dashboard() {
 
   return (
     <div className="container mx-auto p-4 md:p-6">
-      {/* Header with auth options for unauthenticated users */}
       {!user && (
         <div className="mb-8 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
           <div className="flex flex-col md:flex-row justify-between items-center">
@@ -203,13 +173,11 @@ export default function Dashboard() {
       )}
 
       <div className="flex flex-col lg:flex-row gap-6">
-        {/* Filters */}
         <div className="w-full lg:w-1/4 p-4 md:p-6 bg-gray-100 dark:bg-gray-800 rounded-lg shadow-md">
           <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4">
             Filtros
           </h2>
 
-          {/* Province */}
           <div className="mt-4">
             <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">
               Provincia
@@ -228,7 +196,6 @@ export default function Dashboard() {
             </select>
           </div>
 
-          {/* Canton */}
           <div className="mt-4">
             <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">
               Canton
@@ -248,7 +215,6 @@ export default function Dashboard() {
             </select>
           </div>
 
-          {/* Search */}
           <div className="mb-4">
             <label
               htmlFor="searchJobs"
@@ -266,7 +232,6 @@ export default function Dashboard() {
             />
           </div>
 
-          {/* Job List */}
           <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
             Servicios disponibles
           </h3>
@@ -293,7 +258,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* List of chamberos */}
         <div className="w-full lg:w-3/4 p-4 md:p-6">
           <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-6">
             Perfiles de Chamberos
@@ -302,18 +266,13 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {filteredUsers && filteredUsers.length > 0 ? (
               filteredUsers.map((user) => (
-                <Card
-                  key={user._id}
-                  user={user}
-                />
+                <Card key={user._id} user={user} />
               ))
             ) : (
               <div className="col-span-full text-center text-gray-600 dark:text-gray-400">
-                {selectedProvince || selectedCanton || selectedTags.length > 0 || searchQuery ? (
-                  "No se encontraron chamberos con los filtros seleccionados."
-                ) : (
-                  "No hay chamberos registrados en el sistema."
-                )}
+                {selectedProvince || selectedCanton || selectedTags.length > 0 || searchQuery
+                  ? "No se encontraron chamberos con los filtros seleccionados."
+                  : "No hay chamberos registrados en el sistema."}
               </div>
             )}
           </div>

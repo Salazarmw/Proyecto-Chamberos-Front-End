@@ -1,45 +1,47 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "../../config/axios";
 import { AuthContext } from "../../../../context/AuthContext";
 import DetailsModal from "../components/DetailsModal";
+import axios from "../../config/axios";
+
+// Define fetchJobs function
+const fetchJobs = async (setJobs, setLoading, selectedStatuses) => {
+  try {
+    setLoading(true);
+    const queryParams = new URLSearchParams();
+    if (selectedStatuses.length > 0) {
+      queryParams.append("status", selectedStatuses.join(","));
+    }
+
+    const url = `/api/jobs?${queryParams.toString()}`;
+    const response = await axios.get(url);
+    setJobs(response.data);
+  } catch (error) {
+    console.error("Error fetching jobs:", error);
+    setError(error.response?.data?.message || "Error loading jobs");
+  } finally {
+    setLoading(false);
+  }
+};
+
+// Define setError function
+const setError = (message) => {
+  console.error("Error:", message);
+};
 
 const Jobs = () => {
-  const [jobs, setJobs] = useState([]);
   const [selectedStatuses, setSelectedStatuses] = useState([]);
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalQuotation, setModalQuotation] = useState(null);
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (user) {
-      fetchJobs();
-    }
-  }, [user, selectedStatuses]);
-
-  const fetchJobs = async () => {
-    try {
-      setLoading(true);
-      const queryParams = new URLSearchParams();
-      if (selectedStatuses.length > 0) {
-        selectedStatuses.forEach((status) => {
-          queryParams.append("status[]", status);
-        });
-      }
-
-      const url = `/api/jobs?${queryParams.toString()}`;
-      const response = await axios.get(url);
-      setJobs(response.data);
-    } catch (error) {
-      console.error("Error fetching jobs:", error);
-      setError(error.response?.data?.message || "Error loading jobs");
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetchJobs(setJobs, setLoading, selectedStatuses);
+  }, [selectedStatuses]);
 
   const handleFilterChange = (e) => {
     const value = e.target.value;
@@ -67,7 +69,7 @@ const Jobs = () => {
         }
       }
 
-      await fetchJobs();
+      await fetchJobs(setJobs, setLoading, selectedStatuses);
     } catch (error) {
       console.error("Error approving job:", error);
       setError(error.response?.data?.message || "Error al aprobar el trabajo");
@@ -130,7 +132,7 @@ const Jobs = () => {
     return (
       <div className="container mx-auto p-4 text-center">
         <div className="bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded-lg">
-          {error}
+          {error.message}
         </div>
       </div>
     );
@@ -153,9 +155,9 @@ const Jobs = () => {
                 type="checkbox"
                 id="filter1"
                 value="in_progress"
-                className="form-checkbox h-5 w-5 text-indigo-600 dark:text-indigo-400"
                 checked={selectedStatuses.includes("in_progress")}
                 onChange={handleFilterChange}
+                className="form-checkbox h-5 w-5 text-indigo-600 dark:text-indigo-400"
               />
               <label
                 htmlFor="filter1"
@@ -169,9 +171,9 @@ const Jobs = () => {
                 type="checkbox"
                 id="filter2"
                 value="completed"
-                className="form-checkbox h-5 w-5 text-indigo-600 dark:text-indigo-400"
                 checked={selectedStatuses.includes("completed")}
                 onChange={handleFilterChange}
+                className="form-checkbox h-5 w-5 text-indigo-600 dark:text-indigo-400"
               />
               <label
                 htmlFor="filter2"
@@ -210,7 +212,7 @@ const Jobs = () => {
                 {jobs.length > 0 ? (
                   jobs.map((job) => (
                     <tr
-                      key={job._id}
+                      key={job.id}
                       className="hover:bg-gray-50 dark:hover:bg-gray-700"
                     >
                       <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-200">

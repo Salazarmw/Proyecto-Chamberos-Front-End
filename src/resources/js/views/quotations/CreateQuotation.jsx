@@ -54,11 +54,6 @@ const CreateQuotation = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (!user || !user._id) {
-        setError("Debe iniciar sesión para crear una cotización");
-        return;
-      }
-
       const price = parseInt(formData.price.replace(/,/g, ""));
       if (isNaN(price) || price <= 0) {
         setError("El precio debe ser un número positivo");
@@ -77,7 +72,6 @@ const CreateQuotation = () => {
       const response = await axios.post("/api/quotations", quotationData);
       navigate("/quotations");
     } catch (error) {
-      console.error("Error creating quotation:", error);
       setError(error.response?.data?.message || "Error creating quotation");
     }
   };
