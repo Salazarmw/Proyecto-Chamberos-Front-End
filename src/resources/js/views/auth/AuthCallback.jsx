@@ -1,6 +1,6 @@
-import { useEffect, useContext } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { AuthContext } from '../../../../context/AuthContext';
+import { useEffect, useContext } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { AuthContext } from "../../../../context/AuthContext";
 
 export default function AuthCallback() {
   const navigate = useNavigate();
@@ -11,41 +11,45 @@ export default function AuthCallback() {
     const handleCallback = async () => {
       try {
         const params = new URLSearchParams(location.search);
-        const token = params.get('token');
-        const error = params.get('error');
+        const token = params.get("token");
+        const error = params.get("error");
 
         if (error) {
           throw new Error(error);
         }
 
         if (!token) {
-          throw new Error('No token received');
+          throw new Error("No token received");
         }
 
         // Obtener los datos del usuario usando el token
-        const response = await fetch('http://localhost:5000/api/auth/me', {
+        const response = await fetch("http://localhost:5000/api/auth/me", {
           headers: {
-            'Authorization': `Bearer ${token}`
-          }
+            Authorization: `Bearer ${token}`,
+          },
         });
 
         if (!response.ok) {
-          throw new Error('Failed to fetch user data');
+          throw new Error("Failed to fetch user data");
         }
 
         const userData = await response.json();
-        
+
         // Guardar el token en localStorage
-        localStorage.setItem('token', token);
+        localStorage.setItem("token", token);
         // Actualizar el estado de autenticación
         login({ token, user: userData });
-        navigate('/dashboard');
+        if (userData.isProfileComplete === false) {
+          navigate("/profile/edit");
+        } else {
+          navigate("/dashboard");
+        }
       } catch (error) {
-        console.error('Error during social login:', error);
-        navigate('/login', { 
-          state: { 
-            error: error.message || 'Failed to complete social login'
-          } 
+        console.error("Error during social login:", error);
+        navigate("/login", {
+          state: {
+            error: error.message || "Failed to complete social login",
+          },
         });
       }
     };
@@ -61,4 +65,4 @@ export default function AuthCallback() {
       </div>
     </div>
   );
-} 
+}
