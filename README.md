@@ -1,7 +1,5 @@
 # Proyecto-Chamberos-Front-End
 
-# Proyecto-Chamberos-Front-End
-
 Aplicación Front-End para Chamberos, desarrollada en React.
 
 ## Características
