@@ -16,18 +16,16 @@ const Quotations = () => {
 
   useEffect(() => {
     if (user) {
-      fetchQuotations();
+      fetchQuotations(setQuotations, setLoading, selectedStatuses);
     }
   }, [user, selectedStatuses]);
 
-  const fetchQuotations = async () => {
+  const fetchQuotations = async (setQuotations, setLoading, selectedStatuses) => {
     try {
       setLoading(true);
       const queryParams = new URLSearchParams();
       if (selectedStatuses.length > 0) {
-        selectedStatuses.forEach(status => {
-          queryParams.append('status[]', status);
-        });
+        queryParams.append("status", selectedStatuses.join(","));
       }
 
       const url = `/api/quotations?${queryParams.toString()}`;
@@ -65,7 +63,7 @@ const Quotations = () => {
       );
 
       if (response.status === 200 || response.status === 201) {
-        await fetchQuotations();
+        await fetchQuotations(setQuotations, setLoading, selectedStatuses);
       }
     } catch (error) {
       console.error("Error handling action:", error);

@@ -4,8 +4,6 @@ import axios from "../../config/axios";
 import WorkGallery from "../../components/WorkGallery";
 import { AuthContext } from "../../../../context/AuthContext";
 
-const GRAPHQL_URL = "http://localhost:4000/graphql";
-
 const ViewProfile = () => {
   const { id } = useParams();
   const { user } = useContext(AuthContext);
@@ -66,63 +64,29 @@ const ViewProfile = () => {
     }
   };
 
-  useEffect(() => {
-    const fetchReviews = async () => {
-      try {
-        const query = `
-          query GetReviews($chamberoId: ID!) {
-            reviews(chamberoId: $chamberoId) {
-              id
-              rating
-              comment
-              createdAt
-              user {
-                id
-                name
-                profile_photo
-              }
-            }
-          }
-        `;
-        const res = await fetch(GRAPHQL_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-          body: JSON.stringify({
-            query,
-            variables: { chamberoId: id },
-          }),
-        });
-        const { data } = await res.json();
-        if (data && data.reviews && data.reviews.length > 0) {
-          setReviews(data.reviews);
-        } else {
-          // Si GraphQL no devuelve reviews, usar la REST API
-          const restRes = await axios.get(`/api/reviews/user/${id}`);
-          if (restRes.data && restRes.data.reviews) {
-            // Adaptar formato para que coincida con el renderizado
-            const adapted = restRes.data.reviews.map((r) => ({
-              id: r._id,
-              rating: r.rating,
-              comment: r.comment,
-              createdAt: r.created_at,
-              user: {
-                id: r.fromUser._id || r.fromUser,
-                name: r.fromUser.name || "Usuario",
-                profile_photo: r.fromUser.profile_photo || null,
-              },
-            }));
-            setReviews(adapted);
-          }
-        }
-      } catch (err) {
-        console.error("Error fetching reviews:", err);
+  const fetchReviews = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/reviews", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error("Error fetching reviews");
       }
-    };
+
+      const data = await res.json();
+      setReviews(data);
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+    }
+  };
+
+  useEffect(() => {
     fetchReviews();
-  }, [id]);
+  }, []);
 
   if (loading) {
     return (
@@ -159,7 +123,7 @@ const ViewProfile = () => {
             <div className="absolute -bottom-12 left-8">
               <img
                 src={
-                  userData.profile_photo
+                  userData?.profile_photo
                     ? userData.profile_photo
                     : "https://chambero-profile-bucket.s3.us-east-2.amazonaws.com/Profile_avatar_placeholder_large.png"
                 }
@@ -261,16 +225,16 @@ const ViewProfile = () => {
                   <div className="flex items-center space-x-3 mb-3">
                     <img
                       src={
-                        review.user.profile_photo
+                        review?.user?.profile_photo
                           ? review.user.profile_photo
                           : "https://chambero-profile-bucket.s3.us-east-2.amazonaws.com/Profile_avatar_placeholder_large.png"
                       }
-                      alt={`${review.user.name}'s profile`}
+                      alt={`${review?.user?.name || "User"}'s profile`}
                       className="w-10 h-10 rounded-full object-cover"
                     />
                     <div>
                       <h3 className="font-semibold text-gray-900 dark:text-white">
-                        {review.user.name}
+                        {review?.user?.name || "Usuario"}
                       </h3>
                       <div className="flex items-center">
                         {[...Array(5)].map((_, index) => (
