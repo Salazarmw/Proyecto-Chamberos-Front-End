@@ -24,7 +24,7 @@ import Quotations from "./resources/js/views/quotations/Quotations";
 import CreateQuotation from "./resources/js/views/quotations/CreateQuotation";
 import Counteroffer from "./resources/js/views/quotations/Counteroffer";
 import Jobs from "./resources/js/views/jobs/Jobs";
-import Reviews from "./resources/js/views/reviews/CreateReview";
+import CreateReview from "./resources/js/views/reviews/CreateReview";
 import NotFound from "./resources/js/views/NotFound";
 
 function App() {
@@ -33,6 +33,22 @@ function App() {
       <AuthProvider>
         <Routes>
           {/* Rutas públicas */}
+          <Route
+            path="/dashboard"
+            element={
+              <AppLayout>
+                <Dashboard />
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/profile/:id"
+            element={
+              <AppLayout>
+                <ViewProfile />
+              </AppLayout>
+            }
+          />
           <Route element={<PublicRoute />}>
             <Route
               path="/login"
@@ -82,22 +98,6 @@ function App() {
                 </GuestLayout>
               }
             />
-            <Route
-              path="/dashboard"
-              element={
-                <AppLayout>
-                  <Dashboard />
-                </AppLayout>
-              }
-            />
-            <Route
-              path="/profile/:id"
-              element={
-                <AppLayout>
-                  <ViewProfile />
-                </AppLayout>
-              }
-            />
           </Route>
 
           {/* Rutas protegidas */}
@@ -143,13 +143,13 @@ function App() {
               }
             />
             <Route
-              path="/reviews/:userId"
+              path="/reviews/create/:jobId"
               element={
                 <AppLayout>
-                  <Reviews />
+                  <CreateReview />
                 </AppLayout>
               }
-            />
+            /> 
           </Route>
 
           {/* Redirección y página 404 */}
