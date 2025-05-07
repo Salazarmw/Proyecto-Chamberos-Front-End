@@ -141,10 +141,29 @@ export default function UpdateProfileInformationForm({ user, tags, onUpdate }) {
     }
   };
 
+  // Validar teléfono único
+  const validatePhone = async (phone) => {
+    try {
+      const response = await axios.get(`/api/auth/check-phone/${phone}`);
+      return !response.data.exists;
+    } catch (error) {
+      return false;
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrors({});
     setMessage(null);
+
+    // Validar teléfono si cambió
+    if (formData.phone !== user.phone) {
+      const isPhoneAvailable = await validatePhone(formData.phone);
+      if (!isPhoneAvailable) {
+        setErrors({ phone: "Este número de teléfono ya está registrado" });
+        return;
+      }
+    }
 
     try {
       // Primero, vamos a enviar solo los datos básicos sin el archivo
@@ -264,9 +283,12 @@ export default function UpdateProfileInformationForm({ user, tags, onUpdate }) {
                 alt="Profile Photo"
                 className="rounded-full h-32 w-32 object-cover border-4 border-indigo-500 dark:border-indigo-400"
                 onError={(e) => {
-                  console.log("Error loading profile photo, falling back to default");
+                  console.log(
+                    "Error loading profile photo, falling back to default"
+                  );
                   e.target.onerror = null;
-                  e.target.src = "https://chambero-profile-bucket.s3.us-east-2.amazonaws.com/Profile_avatar_placeholder_large.png";
+                  e.target.src =
+                    "https://chambero-profile-bucket.s3.us-east-2.amazonaws.com/Profile_avatar_placeholder_large.png";
                 }}
               />
             ) : (

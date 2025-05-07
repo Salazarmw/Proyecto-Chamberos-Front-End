@@ -17,7 +17,7 @@ export default function EditProfile() {
     try {
       const [userResponse, tagsResponse] = await Promise.all([
         axios.get("/api/users/me"),
-        axios.get("/api/tags")
+        axios.get("/api/tags"),
       ]);
 
       console.log("User data:", userResponse.data);
@@ -26,7 +26,7 @@ export default function EditProfile() {
       // Actualizar el estado local
       setUser(userResponse.data);
       setTags(tagsResponse.data.tags || []);
-      
+
       setLoading(false);
     } catch (error) {
       console.error("Error fetching profile data:", error);
@@ -42,7 +42,10 @@ export default function EditProfile() {
 
   // Actualizar el estado local cuando se actualice el usuario
   useEffect(() => {
-    if (authUser && (!user || JSON.stringify(user) !== JSON.stringify(authUser))) {
+    if (
+      authUser &&
+      (!user || JSON.stringify(user) !== JSON.stringify(authUser))
+    ) {
       setUser(authUser);
     }
   }, [authUser]);
@@ -64,11 +67,15 @@ export default function EditProfile() {
   }
 
   return (
-    <div className="py-12">
-      <div className="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+    <div className="py-6 px-2 sm:px-4 md:px-8 lg:px-16 xl:px-32 min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="max-w-4xl mx-auto space-y-6">
         <div className="p-4 sm:p-8 bg-white dark:bg-gray-800 shadow sm:rounded-lg">
           <div className="max-w-xl">
-            <UpdateProfileInformationForm user={user} tags={tags} onUpdate={fetchData} />
+            <UpdateProfileInformationForm
+              user={user}
+              tags={tags}
+              onUpdate={fetchData}
+            />
           </div>
         </div>
 

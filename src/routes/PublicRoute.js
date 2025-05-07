@@ -6,7 +6,15 @@ import { AuthContext } from "../context/AuthContext";
 
 const PublicRoute = () => {
   const { user } = useContext(AuthContext);
-  return user ? <Navigate to="/dashboard" replace /> : <Outlet />;
+
+  if (user) {
+    if (!user.isProfileComplete) {
+      return <Navigate to="/profile/edit" replace />;
+    }
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <Outlet />;
 };
 
 export default PublicRoute;

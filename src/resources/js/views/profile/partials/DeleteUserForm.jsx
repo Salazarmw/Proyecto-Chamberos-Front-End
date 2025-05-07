@@ -12,7 +12,7 @@ export default function DeleteUserForm() {
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
-  const { logout } = useContext(AuthContext);
+  const { logout, user } = useContext(AuthContext);
 
   const confirmUserDeletion = () => {
     setConfirmingUserDeletion(true);
@@ -34,7 +34,7 @@ export default function DeleteUserForm() {
           "Content-Type": "application/json",
           Accept: "application/json",
         },
-        body: JSON.stringify({ password }),
+        body: user && user.socialProvider ? null : JSON.stringify({ password }),
       });
 
       if (response.ok) {
@@ -75,29 +75,33 @@ export default function DeleteUserForm() {
 
               <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
                 Once your account is deleted, all of its resources and data will
-                be permanently deleted. Please enter your password to confirm
-                you would like to permanently delete your account.
+                be permanently deleted.{" "}
+                {user && user.socialProvider
+                  ? "This action cannot be undone."
+                  : "Please enter your password to confirm you would like to permanently delete your account."}
               </p>
 
-              <div className="mt-6">
-                <InputLabel
-                  htmlFor="password"
-                  value="Password"
-                  className="sr-only"
-                />
+              {!(user && user.socialProvider) && (
+                <div className="mt-6">
+                  <InputLabel
+                    htmlFor="password"
+                    value="Password"
+                    className="sr-only"
+                  />
 
-                <TextInput
-                  id="password"
-                  type="password"
-                  name="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="mt-1 block w-3/4"
-                  placeholder="Password"
-                />
+                  <TextInput
+                    id="password"
+                    type="password"
+                    name="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="mt-1 block w-3/4"
+                    placeholder="Password"
+                  />
 
-                <InputError messages={errors.password} className="mt-2" />
-              </div>
+                  <InputError messages={errors.password} className="mt-2" />
+                </div>
+              )}
 
               <div className="mt-6 flex justify-end">
                 <SecondaryButton onClick={closeModal} type="button">
