@@ -155,9 +155,9 @@ const Jobs = () => {
                 type="checkbox"
                 id="filter1"
                 value="in_progress"
-                className="form-checkbox h-5 w-5 text-indigo-600 dark:text-indigo-400"
                 checked={selectedStatuses.includes("in_progress")}
                 onChange={handleFilterChange}
+                className="form-checkbox h-5 w-5 text-indigo-600 dark:text-indigo-400"
               />
               <label
                 htmlFor="filter1"
@@ -171,9 +171,9 @@ const Jobs = () => {
                 type="checkbox"
                 id="filter2"
                 value="completed"
-                className="form-checkbox h-5 w-5 text-indigo-600 dark:text-indigo-400"
                 checked={selectedStatuses.includes("completed")}
                 onChange={handleFilterChange}
+                className="form-checkbox h-5 w-5 text-indigo-600 dark:text-indigo-400"
               />
               <label
                 htmlFor="filter2"

@@ -171,14 +171,14 @@ const Quotations = () => {
             <div className="flex items-center">
               <input
                 type="checkbox"
-                id="filter4"
+                id="filter2"
                 value="counteroffer"
                 className="form-checkbox h-5 w-5 text-indigo-600 dark:text-indigo-400"
                 checked={selectedStatuses.includes("counteroffer")}
                 onChange={handleFilterChange}
               />
               <label
-                htmlFor="filter4"
+                htmlFor="filter2"
                 className="ml-2 text-gray-700 dark:text-gray-300"
               >
                 Contraofertas
@@ -187,14 +187,14 @@ const Quotations = () => {
             <div className="flex items-center">
               <input
                 type="checkbox"
-                id="filter2"
+                id="filter3"
                 value="accepted"
                 className="form-checkbox h-5 w-5 text-indigo-600 dark:text-indigo-400"
                 checked={selectedStatuses.includes("accepted")}
                 onChange={handleFilterChange}
               />
               <label
-                htmlFor="filter2"
+                htmlFor="filter3"
                 className="ml-2 text-gray-700 dark:text-gray-300"
               >
                 Aceptadas
@@ -203,14 +203,14 @@ const Quotations = () => {
             <div className="flex items-center">
               <input
                 type="checkbox"
-                id="filter3"
+                id="filter4"
                 value="rejected"
                 className="form-checkbox h-5 w-5 text-indigo-600 dark:text-indigo-400"
                 checked={selectedStatuses.includes("rejected")}
                 onChange={handleFilterChange}
               />
               <label
-                htmlFor="filter3"
+                htmlFor="filter4"
                 className="ml-2 text-gray-700 dark:text-gray-300"
               >
                 Rechazadas
