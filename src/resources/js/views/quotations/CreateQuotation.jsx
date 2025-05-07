@@ -55,8 +55,13 @@ const CreateQuotation = () => {
     e.preventDefault();
     try {
       const price = parseInt(formData.price.replace(/,/g, ""));
+      if (isNaN(price) || price <= 0) {
+        setError("El precio debe ser un número positivo");
+        return;
+      }
+
       const quotationData = {
-        client_id: user._id,
+        client_id: user._id.toString(),
         chambero_id: chamberoId,
         service_description: formData.service_description,
         scheduled_date: formData.scheduled_date,
@@ -67,7 +72,6 @@ const CreateQuotation = () => {
       const response = await axios.post("/api/quotations", quotationData);
       navigate("/quotations");
     } catch (error) {
-      console.error("Error creating quotation:", error);
       setError(error.response?.data?.message || "Error creating quotation");
     }
   };

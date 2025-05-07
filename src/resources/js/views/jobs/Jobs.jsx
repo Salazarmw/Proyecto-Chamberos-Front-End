@@ -25,8 +25,8 @@ const Jobs = () => {
       setLoading(true);
       const queryParams = new URLSearchParams();
       if (selectedStatuses.length > 0) {
-        selectedStatuses.forEach(status => {
-          queryParams.append('status[]', status);
+        selectedStatuses.forEach((status) => {
+          queryParams.append("status[]", status);
         });
       }
 
@@ -52,12 +52,25 @@ const Jobs = () => {
 
   const handleApproveJob = async (jobId) => {
     try {
-      await axios.post(`/api/jobs/${jobId}/approve`, {
-        user_type: user.user_type
+      const response = await axios.post(`/api/jobs/${jobId}/approve`, {
+        user_type: user.user_type,
       });
+
+      // Si el usuario es cliente y el trabajo está completado, redirigir a la página de review
+      if (user.user_type === "client") {
+        const jobResponse = await axios.get(`/api/jobs/${jobId}`);
+        const job = jobResponse.data;
+
+        if (job.status === "completed" && !job.has_review) {
+          navigate(`/reviews/create/${jobId}`);
+          return;
+        }
+      }
+
       await fetchJobs();
     } catch (error) {
       console.error("Error approving job:", error);
+      setError(error.response?.data?.message || "Error al aprobar el trabajo");
     }
   };
 
@@ -204,7 +217,9 @@ const Jobs = () => {
                         {job.quotation_id?.service_description || "N/A"}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-200">
-                        {job.status === "in_progress" ? "En Progreso" : "Completado"}
+                        {job.status === "in_progress"
+                          ? "En Progreso"
+                          : "Completado"}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-200">
                         {job.client_id?.name || "N/A"}
@@ -217,16 +232,20 @@ const Jobs = () => {
                           <div className="flex flex-wrap gap-2 flex-row-reverse justify-end items-center">
                             {/* Mostrar el estado de aprobación */}
                             <div className="text-sm text-gray-600 dark:text-gray-400">
-                              {user.user_type === "client" ? (
-                                job.client_ok ? "✓ Aprobado" : "Pendiente de tu aprobación"
-                              ) : (
-                                job.chambero_ok ? "✓ Aprobado" : "Pendiente de tu aprobación"
-                              )}
+                              {user.user_type === "client"
+                                ? job.client_ok
+                                  ? "✓ Aprobado"
+                                  : "Pendiente de tu aprobación"
+                                : job.chambero_ok
+                                ? "✓ Aprobado"
+                                : "Pendiente de tu aprobación"}
                             </div>
                             {/* Botón ver detalles de la quotation */}
                             {job.quotation_id && (
                               <button
-                                onClick={() => handleShowDetails(job.quotation_id)}
+                                onClick={() =>
+                                  handleShowDetails(job.quotation_id)
+                                }
                                 className="bg-blue-500 hover:bg-blue-600 text-white text-sm px-3 py-1 rounded"
                               >
                                 Ver detalles
@@ -234,7 +253,8 @@ const Jobs = () => {
                             )}
                             {/* Botón de aprobar si aún no ha aprobado */}
                             {((user.user_type === "client" && !job.client_ok) ||
-                              (user.user_type === "chambero" && !job.chambero_ok)) && (
+                              (user.user_type === "chambero" &&
+                                !job.chambero_ok)) && (
                               <button
                                 onClick={() => handleApproveJob(job._id)}
                                 className="bg-green-500 hover:bg-green-600 text-white text-sm px-3 py-1 rounded"
@@ -271,19 +291,53 @@ const Jobs = () => {
         {modalQuotation && (
           <div className="space-y-4">
             <div>
-              <h3 className="font-semibold text-gray-800 dark:text-gray-100 mb-1">Oferta Inicial</h3>
+              <h3 className="font-semibold text-gray-800 dark:text-gray-100 mb-1">
+                Oferta Inicial
+              </h3>
               <div className="text-sm text-gray-700 dark:text-gray-300">
-                <p><strong>Descripción:</strong> {modalQuotation.original_service_description || modalQuotation.service_description}</p>
-                <p><strong>Fecha:</strong> {modalQuotation.original_scheduled_date ? new Date(modalQuotation.original_scheduled_date).toLocaleDateString("es-CR") : new Date(modalQuotation.scheduled_date).toLocaleDateString("es-CR")}</p>
-                <p><strong>Precio:</strong> ₡{modalQuotation.original_price ? Number(modalQuotation.original_price).toLocaleString("es-CR") : Number(modalQuotation.price).toLocaleString("es-CR")}</p>
+                <p>
+                  <strong>Descripción:</strong>{" "}
+                  {modalQuotation.original_service_description ||
+                    modalQuotation.service_description}
+                </p>
+                <p>
+                  <strong>Fecha:</strong>{" "}
+                  {modalQuotation.original_scheduled_date
+                    ? new Date(
+                        modalQuotation.original_scheduled_date
+                      ).toLocaleDateString("es-CR")
+                    : new Date(
+                        modalQuotation.scheduled_date
+                      ).toLocaleDateString("es-CR")}
+                </p>
+                <p>
+                  <strong>Precio:</strong> ₡
+                  {modalQuotation.original_price
+                    ? Number(modalQuotation.original_price).toLocaleString(
+                        "es-CR"
+                      )
+                    : Number(modalQuotation.price).toLocaleString("es-CR")}
+                </p>
               </div>
             </div>
             <div>
-              <h3 className="font-semibold text-gray-800 dark:text-gray-100 mb-1">Contraoferta</h3>
+              <h3 className="font-semibold text-gray-800 dark:text-gray-100 mb-1">
+                Contraoferta
+              </h3>
               <div className="text-sm text-gray-700 dark:text-gray-300">
-                <p><strong>Nota:</strong> {modalQuotation.service_description}</p>
-                <p><strong>Fecha:</strong> {new Date(modalQuotation.scheduled_date).toLocaleDateString("es-CR")}</p>
-                <p><strong>Precio:</strong> ₡{Number(modalQuotation.price).toLocaleString("es-CR")}</p>
+                <p>
+                  <strong>Nota:</strong> {modalQuotation.service_description}
+                </p>
+                <p>
+                  <strong>Fecha:</strong>{" "}
+                  {new Date(modalQuotation.scheduled_date).toLocaleDateString(
+                    "es-CR"
+                  )}
+                </p>
+                <p>
+                  <strong>Precio:</strong> ₡
+                  {Number(modalQuotation.price).toLocaleString("es-CR")}
+                </p>
               </div>
             </div>
           </div>
@@ -294,4 +348,3 @@ const Jobs = () => {
 };
 
 export default Jobs;
-

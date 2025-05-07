@@ -1,9 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
+import { Link } from "react-router-dom";
 import DropdownRegister from "./components/DropdownRegister";
 import Card from "./components/Card";
 import axios from "../config/axios";
+import { AuthContext } from "../../../context/AuthContext";
 
 export default function Dashboard() {
+  const { user } = useContext(AuthContext);
   const [provinces, setProvinces] = useState([]);
   const [tags, setTags] = useState([]);
   const [users, setUsers] = useState([]);
@@ -169,6 +172,36 @@ export default function Dashboard() {
 
   return (
     <div className="container mx-auto p-4 md:p-6">
+      {/* Header with auth options for unauthenticated users */}
+      {!user && (
+        <div className="mb-8 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="mb-4 md:mb-0">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                Bienvenido a Chamberos
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400">
+                Encuentra el mejor servicio de chamberos para tu vehículo
+              </p>
+            </div>
+            <div className="flex gap-4">
+              <Link
+                to="/login"
+                className="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700 transition-colors"
+              >
+                Iniciar Sesión
+              </Link>
+              <Link
+                to="/register"
+                className="bg-white text-indigo-600 px-6 py-2 rounded-md border border-indigo-600 hover:bg-indigo-50 transition-colors"
+              >
+                Registrarse
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Filters */}
         <div className="w-full lg:w-1/4 p-4 md:p-6 bg-gray-100 dark:bg-gray-800 rounded-lg shadow-md">
@@ -258,16 +291,6 @@ export default function Dashboard() {
               </p>
             )}
           </div>
-
-          {/* Filter button */}
-          <button
-            onClick={() => {
-              // Implement the filter logic here
-            }}
-            className="mt-4 w-full bg-indigo-600 text-white py-2 rounded-md shadow-lg hover:bg-indigo-700 focus:outline-none"
-          >
-            Filtrar
-          </button>
         </div>
 
         {/* List of chamberos */}

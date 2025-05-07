@@ -1,35 +1,51 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import axios from "../../../../config/axios";
+import { AuthContext } from "../../../../context/AuthContext";
 
 const CreateReview = () => {
   const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState("");
   const [job, setJob] = useState(null);
-  const [toUser, setToUser] = useState(null);
-  const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const { jobId } = useParams();
   const navigate = useNavigate();
+  const { user } = useContext(AuthContext);
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("user"));
-    setCurrentUser(user);
+    if (!user) {
+      setError("Debe iniciar sesión para crear una review");
+      setLoading(false);
+      return;
+    }
     fetchJobData();
-  }, [jobId]);
+  }, [jobId, user]);
 
   const fetchJobData = async () => {
     try {
-      const response = await fetch(`/api/jobs/${jobId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setJob(data.job);
-        setToUser(data.toUser);
-      } else {
-        console.error("Error al cargar datos del trabajo");
-        navigate("/jobs");
+      const response = await axios.get(`/api/jobs/${jobId}`);
+      const jobData = response.data;
+
+      // Verificar que el trabajo existe y está completado
+      if (!jobData || jobData.status !== "completed") {
+        setError("Este trabajo no está disponible para review");
+        return;
       }
+
+      // Verificar que el usuario es el cliente y no ha hecho review
+      if (user.user_type !== "client" || jobData.has_review) {
+        setError("No puedes hacer review de este trabajo");
+        return;
+      }
+
+      setJob(jobData);
     } catch (error) {
-      console.error("Error de red:", error);
-      navigate("/jobs");
+      setError("Error al cargar los datos del trabajo");
+      console.error("Error:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -37,43 +53,56 @@ const CreateReview = () => {
     setRating(value);
   };
 
+  const handleStarHover = (value) => {
+    setHoverRating(value);
+  };
+
+  const handleStarLeave = () => {
+    setHoverRating(0);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!rating) {
-      alert("Por favor selecciona una calificación");
+      setError("Por favor selecciona una calificación");
       return;
     }
 
     try {
-      const response = await fetch("/api/reviews", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          rating,
-          comment,
-          to_user_id: toUser?.id,
-          requested_job_id: job?.id,
-        }),
+      const response = await axios.post("/api/reviews", {
+        jobId,
+        rating,
+        comment,
+        fromUser: job.client_id?._id || job.client_id,
+        toUser: job.chambero_id?._id || job.chambero_id,
       });
 
-      if (response.ok) {
-        navigate("/jobs");
-      } else {
-        alert("Ocurrió un error al guardar la review. Intente nuevamente.");
-      }
+      console.log("Review creada exitosamente:", response.data);
+
+      // Mostrar mensaje de éxito
+      alert("¡Gracias por tu reseña! Será publicada en breve.");
+
+      // Redirigir al dashboard
+      navigate("/dashboard");
     } catch (error) {
-      console.error("Error de red:", error);
-      alert("Error de red. Verifique su conexión.");
+      console.error("Error al crear la review:", error);
+      setError(error.response?.data?.message || "Error al guardar la review");
     }
   };
 
-  if (!job || !toUser || !currentUser) {
+  if (loading) {
     return (
       <div className="h-screen bg-gray-800 flex justify-center items-center">
         <p className="text-white">Cargando...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="h-screen bg-gray-800 flex justify-center items-center">
+        <p className="text-white">{error}</p>
       </div>
     );
   }
@@ -83,18 +112,22 @@ const CreateReview = () => {
       <div className="pt-10 md:pt-20">
         <div className="p-4 md:p-8">
           <h1 className="text-white text-center pb-8 font-light text-4xl md:text-5xl lg:text-6xl">
-            Deja tu Review
+            Califica el Servicio
           </h1>
           <form onSubmit={handleSubmit} className="flex flex-col items-center">
             <div className="md:w-3/4 lg:w-2/3 xl:w-1/2">
               <div className="flex flex-col md:flex-row items-center">
                 <img
-                  src={currentUser.profile_photo || "/DefaultImage.jpeg"}
+                  src={
+                    user.profile_photo
+                      ? user.profile_photo
+                      : "https://chambero-profile-bucket.s3.us-east-2.amazonaws.com/Profile_avatar_placeholder_large.png"
+                  }
                   alt="Foto de perfil"
                   className="rounded-full w-16 h-16 mr-4"
                 />
                 <span className="my-2 py-2 px-4 rounded-md bg-gray-900 text-gray-300 w-full md:w-1/2 md:mr-2">
-                  {currentUser.name} {currentUser.lastname}
+                  {user.name} {user.lastname}
                 </span>
               </div>
 
@@ -117,10 +150,13 @@ const CreateReview = () => {
                     />
                     <label
                       htmlFor={`star${star}`}
-                      className={`cursor-pointer ${
-                        rating >= star ? "text-yellow-500" : "text-black"
-                      } hover:text-yellow-500 star`}
-                      data-value={star}
+                      className={`cursor-pointer text-2xl ${
+                        (hoverRating || rating) >= star
+                          ? "text-yellow-500"
+                          : "text-gray-400"
+                      } hover:text-yellow-500 transition-colors duration-200`}
+                      onMouseEnter={() => handleStarHover(star)}
+                      onMouseLeave={handleStarLeave}
                       onClick={() => handleStarClick(star)}
                     >
                       ★

@@ -345,6 +345,7 @@ export default function ChamberoRegister() {
                   checked={formData.tags.includes(tag._id)}
                   onChange={() => handleTagChange(tag._id)}
                   className="form-checkbox h-5 w-5 text-indigo-600 dark:text-indigo-400"
+                  style={{ minWidth: '20px', minHeight: '20px' }}
                 />
                 <span className="text-gray-700 dark:text-gray-300">
                   {tag.name}
